@@ -1,4 +1,4 @@
-# TimeTable
+# timetable-go
 <p align="center">
   <img width="256" height="256" src="https://github.com/user-attachments/assets/aaa1b413-25a4-4ff3-9577-5487ef99c5f2">
 </p>
