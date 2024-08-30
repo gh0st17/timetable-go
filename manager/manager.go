@@ -39,9 +39,9 @@ func groupUrl(dep uint8, course uint8) string {
 	return basic_types.BaseUrl + "groups.php?" + depParam(dep) + "&" + courseParam(course)
 }
 
-// func sessionUrl(group string) string {
-// 	return basic_types.BaseUrl + "session/index.php?group=" + group
-// }
+func sessionUrl(group string) string {
+	return basic_types.BaseUrl + "session/index.php?group=" + group
+}
 
 func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, error) {
 	var (
@@ -190,7 +190,11 @@ func Run(p *params.Params) error {
 		return nil
 	}
 
-	u = proceedingWeek(p)
+	if p.Session {
+		u, _ = url.Parse(sessionUrl(p.GroupName))
+	} else {
+		u = proceedingWeek(p)
+	}
 
 	loadCookiesFromFile(jar, "cookies.txt", u)
 	if len(jar.Cookies(u)) == 0 {

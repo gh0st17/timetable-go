@@ -21,6 +21,8 @@ type Params struct {
 	Clear     bool
 	Next      bool
 	Current   bool
+	Session   bool
+	Ical      bool
 }
 
 func parseUint8(str string) uint8 {
@@ -44,7 +46,7 @@ timetable --clear
   --proxy       - Использовать прокси
                   <протокол://адрес:порт>
   --sleep       - Время (в секундах) простоя после загрузки недели для семестра
-  --session     - Расписание сессии
+  --session     - Расписание сессии (блокирует выбор недели: -w, -n, -c)
   --clear       - Очистить кэш групп
   --workdir, -d - Путь рабочей директории (кэш)
   --output,  -o - Путь для вывода
@@ -88,6 +90,10 @@ func (p *Params) parseArgs(args *[]string) error {
 		} else if arg == "--current" || arg == "-c" {
 			p.Current = true
 			p.Week = 0
+		} else if arg == "--session" {
+			p.Session = true
+		} else if arg == "--ics" {
+			p.Ical = true
 		} else if u8_ptr == nil && str_ptr == nil {
 			printHelp()
 			return errtype.ArgsError(fmt.Errorf("неизвестный аргумент '%s'", arg))

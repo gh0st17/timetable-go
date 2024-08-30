@@ -31,7 +31,7 @@ func FindNode(doc *html.Node, found *[]html.Node, param *NodeParam) {
 					*found = append(*found, *doc)
 				}
 			}
-		} else {
+		} else if param.Attr_name == "" {
 			*found = append(*found, *doc)
 		}
 	}
