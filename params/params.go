@@ -19,6 +19,8 @@ type Params struct {
 	ProxyUrl  *url.URL
 	List      bool
 	Clear     bool
+	Next      bool
+	Current   bool
 }
 
 func parseUint8(str string) uint8 {
@@ -34,7 +36,9 @@ timetable --clear
   Институт      - Номер института от 1 до 12
   Курс          - Номер курса от 1 до 6
   --group,   -g - Номер группы из списка
-  --week,    -w - Номер недели от 1 до 18 или current для текущей недили, next - для следующей
+  --week,    -w - Номер недели от 1 до 18
+	--next     -n - Следующая неделя (блокирует -c, -w)
+	--current  -c - Текущая неделя (блокирует -w)
   --list,    -l - Показать только список групп
   --ics         - Вывод в ics файл
   --proxy       - Использовать прокси
@@ -78,6 +82,12 @@ func (p *Params) parseArgs(args *[]string) error {
 			p.List = true
 		} else if arg == "--clear" {
 			p.Clear = true
+		} else if arg == "--next" || arg == "-n" {
+			p.Next = true
+			p.Week = 0
+		} else if arg == "--current" || arg == "-c" {
+			p.Current = true
+			p.Week = 0
 		} else if u8_ptr == nil && str_ptr == nil {
 			printHelp()
 			return errtype.ArgsError(fmt.Errorf("неизвестный аргумент '%s'", arg))

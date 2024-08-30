@@ -1,20 +1,22 @@
 package manager
 
-// func calcWeek() uint16 {
-// 	today := time.Now()
-// 	_, week := today.ISOWeek()
+import "time"
 
-// 	if today.Month() >= 8 && today.Day() >= 1 {
-// 		week -= 34
-// 	} else {
-// 		week -= 6
-// 	}
+func calcWeek() uint8 {
+	today := time.Now()
+	_, week := today.ISOWeek()
 
-// 	if week < 1 {
-// 		week = 1
-// 	} else if week > 18 {
-// 		week = 18
-// 	}
+	if today.Month() >= 8 && today.Day() >= 1 {
+		week -= 34
+	} else {
+		week -= 6
+	}
 
-// 	return uint16(week)
-// }
+	if week < 1 {
+		week = 1
+	} else if week > 18 {
+		week = 18
+	}
+
+	return uint8(week)
+}

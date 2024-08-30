@@ -149,6 +149,20 @@ func proceedingGroup(p *params.Params, printOnly bool) error {
 	return nil
 }
 
+func proceedingWeek(p *params.Params) (u *url.URL) {
+	if p.Next {
+		p.Week = calcWeek() + 1
+	} else if p.Current {
+		p.Week = calcWeek()
+	} else if p.Week == 0 {
+		u, _ = url.Parse(todayUrl(&p.GroupName))
+		return u
+	}
+
+	u, _ = url.Parse(todayUrl(&p.GroupName) + "&" + weekParam(p.Week))
+	return u
+}
+
 func Run(p *params.Params) error {
 	var (
 		u   *url.URL
@@ -176,11 +190,7 @@ func Run(p *params.Params) error {
 		return nil
 	}
 
-	if p.Week == 0 {
-		u, _ = url.Parse(todayUrl(&p.GroupName))
-	} else {
-		u, _ = url.Parse(todayUrl(&p.GroupName) + "&" + weekParam(p.Week))
-	}
+	u = proceedingWeek(p)
 
 	loadCookiesFromFile(jar, "cookies.txt", u)
 	if len(jar.Cookies(u)) == 0 {
