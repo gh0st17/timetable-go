@@ -1,6 +1,6 @@
 # TimeTable
 <p align="center">
-  <img width="256" height="256" src="https://github.com/gh0st17/timetable-go/blob/main/logo.png">
+  <img width="256" height="256" src="https://github.com/gh0st17/timetable-go/blob/main/logo.png?raw=true">
 </p>
 
 <p align="center">
