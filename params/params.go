@@ -112,7 +112,7 @@ func (p *Params) FetchParams() error {
 		return err
 	}
 
-	if p.Week < 1 || p.Week > 18 {
+	if p.Week != 0 && p.Week > 18 {
 		return errtype.ParseError(errors.New("номер недели должен быть из [1; 18]"))
 	}
 
