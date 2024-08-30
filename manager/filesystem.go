@@ -141,6 +141,27 @@ func createDir(dirPath string) error {
 	return nil
 }
 
+// Функция для удаления всех файлов в папке
+func removeAllFilesInDir(dirPath string) error {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		// Проверяем, что это файл, а не директория
+		if !entry.IsDir() {
+			filePath := filepath.Join(dirPath, entry.Name())
+			err := os.Remove(filePath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // Функция для получения абсолютного пути запускаемой программы
 func getWd() (string, error) {
 	executable, err := os.Getwd()

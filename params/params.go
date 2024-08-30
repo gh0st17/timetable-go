@@ -18,6 +18,7 @@ type Params struct {
 	WorkDir   string
 	ProxyUrl  *url.URL
 	List      bool
+	Clear     bool
 }
 
 func parseUint8(str string) uint8 {
@@ -40,6 +41,7 @@ timetable --clear
                   <протокол://адрес:порт>
   --sleep       - Время (в секундах) простоя после загрузки недели для семестра
   --session     - Расписание сессии
+  --clear       - Очистить кэш групп
   --workdir, -d - Путь рабочей директории (кэш)
   --output,  -o - Путь для вывода
 `
@@ -74,17 +76,17 @@ func (p *Params) parseArgs(args *[]string) error {
 			str_ptr = &proxyStr
 		} else if arg == "--list" {
 			p.List = true
-		} else if _, err := strconv.ParseUint(arg, 10, 8); err != nil {
+		} else if arg == "--clear" {
+			p.Clear = true
+		} else if u8_ptr == nil && str_ptr == nil {
+			printHelp()
+			return errtype.ArgsError(fmt.Errorf("неизвестный аргумент '%s'", arg))
+		} else if str_ptr != nil {
 			*str_ptr = arg
 			str_ptr = nil
 		} else if res, err := strconv.ParseUint(arg, 10, 8); err == nil {
 			*u8_ptr = uint8(res)
 			u8_ptr = nil
-		} else if u8_ptr == nil {
-			if _, err := strconv.ParseUint(arg, 10, 8); err != nil {
-				printHelp()
-				return errtype.ArgsError(fmt.Errorf("неизвестный аргумент '%s'", arg))
-			}
 		} else {
 			return errtype.ArgsError(fmt.Errorf("неверное значение '%s', требуется число", arg))
 		}
@@ -108,6 +110,10 @@ func (p *Params) FetchParams() error {
 
 	if err := p.parseArgs(&args); err != nil {
 		return err
+	}
+
+	if p.Week < 1 || p.Week > 18 {
+		return errtype.ParseError(errors.New("номер недели должен быть из [1; 18]"))
 	}
 
 	return nil

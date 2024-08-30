@@ -111,7 +111,7 @@ func printTimetable(timetable *[]basic_types.Day, p *params.Params) {
 	}
 }
 
-func proceedingEmptyGroup(p *params.Params, printOnly bool) error {
+func proceedingGroup(p *params.Params, printOnly bool) error {
 	u, _ := url.Parse(groupUrl(p.Dep, p.Course))
 	jar, _ := cookiejar.New(nil)
 	groupFile := fmt.Sprintf("%s/groups/%d-%d.txt", p.WorkDir, p.Dep, p.Course)
@@ -142,7 +142,7 @@ func proceedingEmptyGroup(p *params.Params, printOnly bool) error {
 		p.GroupName = groups[getUserSelection(&groups)]
 	} else if p.Group > 0 && int(p.Group) <= len(groups) {
 		p.GroupName = groups[p.Group-1]
-	} else {
+	} else if !p.List {
 		return errtype.ArgsError(errors.New("номер группы не существует"))
 	}
 
@@ -164,9 +164,11 @@ func Run(p *params.Params) error {
 
 	if !dirExists(p.WorkDir + "/groups") {
 		createDir(p.WorkDir + "/groups")
+	} else if p.Clear {
+		removeAllFilesInDir(p.WorkDir + "/groups")
 	}
 
-	if err = proceedingEmptyGroup(p, p.List); err != nil {
+	if err = proceedingGroup(p, p.List); err != nil {
 		return err
 	}
 
