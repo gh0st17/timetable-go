@@ -37,6 +37,7 @@ func printHelp() {
 	helpText := `timetable {Институт} {Курс} --group <Число> --week <Число>
 timetable {Институт} {Курс} --list
 timetable --clear
+
   Институт      - Номер института от 1 до 12
   Курс          - Номер курса от 1 до 6
   --group,   -g - Номер группы из списка
