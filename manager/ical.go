@@ -54,9 +54,8 @@ func stringToHash(s string) uint64 {
 	return binary.BigEndian.Uint64(hash[:8])
 }
 
-func getEvent(day *basic_types.Day, eventIdx int) (event string) {
+func getEvent(day *basic_types.Day, eventIdx int, uid uint64) (event string) {
 	var (
-		uid       uint64
 		startDate string
 		endDate   string
 		summary   string
@@ -73,8 +72,6 @@ func getEvent(day *basic_types.Day, eventIdx int) (event string) {
 	hour, _ := strconv.Atoi(splittedClock[0])
 	min, _ := strconv.Atoi(splittedClock[1])
 	startDate, endDate = getDate(month, dayInt, hour, min)
-
-	uid = stringToHash(startDate)
 
 	summary = subject.Event_name
 
@@ -106,7 +103,8 @@ func writeIcal(timetable *[]basic_types.Day, p *params.Params) error {
 
 	for _, day := range *timetable {
 		for i := range day.Subjects {
-			icalDoc += getEvent(&day, i) + "\n\n"
+			uid := stringToHash(p.GroupName + day.Date)
+			icalDoc += getEvent(&day, i, uid) + "\n\n"
 		}
 
 		icalDoc += "\n"
