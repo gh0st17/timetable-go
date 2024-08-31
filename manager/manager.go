@@ -15,9 +15,9 @@ import (
 	"golang.org/x/net/html"
 )
 
-// import (
-// 	"time"
-// )
+type Day = basic_types.Day
+type Subject = basic_types.Subject
+type Params = params.Params
 
 func todayUrl(group *string) string {
 	return basic_types.BaseUrl + "index.php?group=" + *group
@@ -70,7 +70,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 	return groups, nil
 }
 
-func fetchTimetable(doc *html.Node) (timetable []basic_types.Day, err error) {
+func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
 	var html_days []html.Node
 	parser.FindNode(doc, &html_days, &day_param)
 
@@ -83,7 +83,7 @@ func fetchTimetable(doc *html.Node) (timetable []basic_types.Day, err error) {
 	return timetable, nil
 }
 
-func printTimetable(timetable *[]basic_types.Day, p *params.Params) {
+func printTimetable(timetable *[]Day, p *Params) {
 	fmt.Printf("Группа %s\n\n", p.GroupName)
 
 	if p.Week != 0 {
@@ -111,7 +111,7 @@ func printTimetable(timetable *[]basic_types.Day, p *params.Params) {
 	}
 }
 
-func proceedingGroup(p *params.Params, printOnly bool) error {
+func proceedingGroup(p *Params, printOnly bool) error {
 	u, _ := url.Parse(groupUrl(p.Dep, p.Course))
 	jar, _ := cookiejar.New(nil)
 	groupFile := fmt.Sprintf("%s/groups/%d-%d.txt", p.WorkDir, p.Dep, p.Course)
@@ -149,7 +149,7 @@ func proceedingGroup(p *params.Params, printOnly bool) error {
 	return nil
 }
 
-func proceedingWeek(p *params.Params) (u *url.URL) {
+func proceedingWeek(p *Params) (u *url.URL) {
 	if p.Week != 0 {
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	}
@@ -172,10 +172,10 @@ func proceedingWeek(p *params.Params) (u *url.URL) {
 	return u
 }
 
-func Run(p *params.Params) error {
+func Run(p *Params) error {
 	var (
 		doc       *html.Node
-		timetable []basic_types.Day
+		timetable []Day
 		u         *url.URL
 		err       error
 	)

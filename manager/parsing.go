@@ -16,7 +16,7 @@ func parseSubjects(html_subjects *[]html.Node, day *basic_types.Day) {
 	for i, html_subject := range *html_subjects {
 		parser.FindNode(&html_subject, &html_subj_name, &subj_name_param)
 		if html_subj_name != nil {
-			day.Subjects = append(day.Subjects, basic_types.Subject{})
+			day.Subjects = append(day.Subjects, Subject{})
 			parser.ExtractSubject(&html_subj_name, &day.Subjects[i])
 		}
 
@@ -25,10 +25,10 @@ func parseSubjects(html_subjects *[]html.Node, day *basic_types.Day) {
 	}
 }
 
-func parseDays(html_days *[]html.Node, timetable *[]basic_types.Day) {
+func parseDays(html_days *[]html.Node, timetable *[]Day) {
 	for _, html_day := range *html_days {
 		var (
-			day           basic_types.Day
+			day           Day
 			html_subjects []html.Node
 			html_date     []html.Node
 		)

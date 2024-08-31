@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 	"timetable/manager/basic_types"
-	"timetable/params"
 )
 
 const ()
@@ -49,18 +48,33 @@ func getDate(month int, day int, hour int, min int) (start string, end string) {
 	return date.Format("20060102T150405"), (date.Add(time.Minute * 90)).Format("20060102T150405")
 }
 
-func stringToHash(s string) uint64 {
-	hash := sha1.Sum([]byte(s))
+func stringToHash(dataString string) uint64 {
+	hash := sha1.Sum([]byte(dataString))
 	return binary.BigEndian.Uint64(hash[:8])
 }
 
-func getEvent(day *basic_types.Day, eventIdx int, uid uint64) (event string) {
+func buildDataString(basicString string, subject *Subject) string {
+	basicString += subject.Event_name + subject.Event_time
+	basicString += subject.Event_type
+
+	for _, educator := range subject.Educators {
+		basicString += educator
+	}
+
+	for _, place := range subject.Places {
+		basicString += place
+	}
+
+	return basicString
+}
+
+func getEvent(day *Day, eventIdx int, uid uint64) (event string) {
 	var (
 		startDate string
 		endDate   string
 		summary   string
 		location  string
-		subject   *basic_types.Subject = &day.Subjects[eventIdx]
+		subject   *Subject = &day.Subjects[eventIdx]
 	)
 
 	splittedDate := strings.Split(day.Date, " ")
@@ -96,14 +110,16 @@ END:VEVENT`,
 		uid, startDate, startDate, endDate, summary, location)
 }
 
-func writeIcal(timetable *[]basic_types.Day, p *params.Params) error {
+func writeIcal(timetable *[]Day, p *Params) error {
 	fmt.Printf("Имя файла %s\n", p.FileName)
 
-	var icalDoc string = "BEGIN:VCALENDAR\n" + getHeader() + "\n\n"
+	var dataString string
+	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n"
 
 	for _, day := range *timetable {
-		for i := range day.Subjects {
-			uid := stringToHash(p.GroupName + day.Date)
+		for i, subject := range day.Subjects {
+			dataString = buildDataString(p.GroupName+day.Date, &subject)
+			uid := stringToHash(dataString)
 			icalDoc += getEvent(&day, i, uid) + "\n\n"
 		}
 

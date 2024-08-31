@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"timetable/errtype"
-	"timetable/params"
 )
 
 // Чтение файла и возврат массива строк
@@ -75,7 +74,7 @@ func writeString(filePath string, data *string) error {
 }
 
 // Печать строк с нумерацией
-func printLines(lines *[]string, p *params.Params, printOnly bool) {
+func printLines(lines *[]string, p *Params, printOnly bool) {
 	if printOnly {
 		for _, line := range *lines {
 			fmt.Println(line)
