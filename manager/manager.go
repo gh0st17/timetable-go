@@ -150,8 +150,6 @@ func proceedingGroup(p *params.Params, printOnly bool) error {
 }
 
 func proceedingWeek(p *params.Params) (u *url.URL) {
-	p.FileName = p.GroupName + "_"
-
 	if p.Week != 0 {
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	}
@@ -203,11 +201,14 @@ func Run(p *params.Params) error {
 		return err
 	}
 
+	p.FileName = p.GroupName + "_"
+
 	if p.List {
 		return nil
 	}
 
 	if p.Session {
+		p.FileName += "Session.ics"
 		u, _ = url.Parse(sessionUrl(p.GroupName))
 	} else {
 		u = proceedingWeek(p)
