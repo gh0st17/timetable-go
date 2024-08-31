@@ -11,23 +11,8 @@ import (
 	"timetable/params"
 )
 
-// func load_from_file(filepath string) (doc *html.Node) {
-// 	// Чтение файла
-// 	file, err := os.ReadFile(filepath)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	doc, err = html.Parse(strings.NewReader(string(file)))
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	return doc
-// }
-
 // Чтение файла и возврат массива строк
-func readFile(filePath string) ([]string, error) {
+func readLines(filePath string) ([]string, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -51,7 +36,7 @@ func readFile(filePath string) ([]string, error) {
 }
 
 // Функция для записи массива строк в файл
-func writeFile(filePath string, lines *[]string) error {
+func writeLines(filePath string, lines *[]string) error {
 	// Открываем файл для записи (перезаписываем файл)
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -65,6 +50,25 @@ func writeFile(filePath string, lines *[]string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// Функция для записи строки в файл
+func writeString(filePath string, data *string) error {
+	var (
+		file *os.File
+		err  error
+	)
+
+	if file, err = os.Create(filePath); err != nil {
+		return errtype.RuntimeError(fmt.Errorf("ошибка создания файла %s: %s", filePath, err))
+	}
+	defer file.Close()
+
+	if _, err = file.WriteString(*data); err != nil {
+		return errtype.RuntimeError(fmt.Errorf("ошибка записи в файл %s: %s", filePath, err))
 	}
 
 	return nil

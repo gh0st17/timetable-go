@@ -28,5 +28,6 @@ go.work.sum
 groups/
 .vscode/
 *.txt
+**.ics
 main
 timetable

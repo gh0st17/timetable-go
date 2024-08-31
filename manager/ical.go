@@ -1,6 +1,17 @@
 package manager
 
-import "time"
+import (
+	"crypto/sha1"
+	"encoding/binary"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+	"timetable/manager/basic_types"
+	"timetable/params"
+)
+
+const ()
 
 func calcWeek() uint8 {
 	today := time.Now()
@@ -19,4 +30,89 @@ func calcWeek() uint8 {
 	}
 
 	return uint8(week)
+}
+
+func getHeader() (header string) {
+	return `VERSION:2.0
+PRODID:ghost17 | Alexey Sorokin
+CALSCALE:GREGORIAN`
+}
+
+func getDate(month int, day int, hour int, min int) (start string, end string) {
+	year := time.Now().Year()
+
+	date := time.Date(
+		year, time.Month(month),
+		day, hour, min, 0, 0, time.UTC, // time.FixedZone("Europe/Moscow", 3),
+	)
+
+	return date.Format("20060102T150405"), (date.Add(time.Minute * 90)).Format("20060102T150405")
+}
+
+func stringToHash(s string) uint64 {
+	hash := sha1.Sum([]byte(s))
+	return binary.BigEndian.Uint64(hash[:8])
+}
+
+func getEvent(day *basic_types.Day, eventIdx int) (event string) {
+	var (
+		uid       uint64
+		startDate string
+		endDate   string
+		summary   string
+		location  string
+		subject   *basic_types.Subject = &day.Subjects[eventIdx]
+	)
+
+	splittedDate := strings.Split(day.Date, " ")
+	dayInt, _ := strconv.Atoi(splittedDate[1])
+	month := basic_types.LongMonthNames[splittedDate[2]]
+
+	splittedTime := strings.Split(day.Subjects[eventIdx].Event_time, " ")
+	splittedClock := strings.Split(splittedTime[0], ":")
+	hour, _ := strconv.Atoi(splittedClock[0])
+	min, _ := strconv.Atoi(splittedClock[1])
+	startDate, endDate = getDate(month, dayInt, hour, min)
+
+	uid = stringToHash(startDate)
+
+	summary = subject.Event_name
+
+	for _, place := range subject.Places {
+		location += fmt.Sprintf("%s / ", place)
+	}
+
+	location += subject.Event_type
+
+	for _, educator := range subject.Educators {
+		location += fmt.Sprintf(" / %s", educator)
+	}
+
+	return fmt.Sprintf(`BEGIN:VEVENT
+UID:%d
+DTSTART:%s
+DTSTAMP:%sZ
+DTEND:%s
+SUMMARY:%s
+LOCATION:%s
+END:VEVENT`,
+		uid, startDate, startDate, endDate, summary, location)
+}
+
+func writeIcal(timetable *[]basic_types.Day, p *params.Params) error {
+	fmt.Printf("Имя файла %s\n", p.FileName)
+
+	var icalDoc string = "BEGIN:VCALENDAR\n" + getHeader() + "\n\n"
+
+	for _, day := range *timetable {
+		for i := range day.Subjects {
+			icalDoc += getEvent(&day, i) + "\n\n"
+		}
+
+		icalDoc += "\n"
+	}
+
+	icalDoc += "END:VCALENDAR"
+
+	return writeString(p.OutDir+"/"+p.FileName, &icalDoc)
 }

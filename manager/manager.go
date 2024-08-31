@@ -122,14 +122,14 @@ func proceedingGroup(p *params.Params, printOnly bool) error {
 	)
 
 	if fileExists(groupFile) {
-		if groups, err = readFile(groupFile); err != nil {
+		if groups, err = readLines(groupFile); err != nil {
 			return err
 		}
 	} else {
 		if groups, err = fetchGroups(u, jar, p.ProxyUrl); err != nil {
 			return err
 		}
-		if err = writeFile(groupFile, &groups); err != nil {
+		if err = writeLines(groupFile, &groups); err != nil {
 			return err
 		}
 	}
@@ -150,14 +150,25 @@ func proceedingGroup(p *params.Params, printOnly bool) error {
 }
 
 func proceedingWeek(p *params.Params) (u *url.URL) {
+	p.FileName = p.GroupName + "_"
+
+	if p.Week != 0 {
+		p.FileName += fmt.Sprintf("Week_%d", p.Week)
+	}
+
 	if p.Next {
 		p.Week = calcWeek() + 1
+		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Current {
 		p.Week = calcWeek()
+		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Week == 0 {
 		u, _ = url.Parse(todayUrl(&p.GroupName))
+		p.FileName += "Today.ics"
 		return u
 	}
+
+	p.FileName += ".ics"
 
 	u, _ = url.Parse(todayUrl(&p.GroupName) + "&" + weekParam(p.Week))
 	return u
@@ -165,14 +176,20 @@ func proceedingWeek(p *params.Params) (u *url.URL) {
 
 func Run(p *params.Params) error {
 	var (
-		u   *url.URL
-		err error
+		doc       *html.Node
+		timetable []basic_types.Day
+		u         *url.URL
+		err       error
 	)
 	jar, _ := cookiejar.New(nil)
 
 	if p.WorkDir == "" {
 		if p.WorkDir, err = getWd(); err != nil {
 			return err
+		}
+
+		if p.OutDir == "" {
+			p.OutDir = p.WorkDir
 		}
 	}
 
@@ -201,19 +218,23 @@ func Run(p *params.Params) error {
 		load_from_url(u, jar, p.ProxyUrl)
 	}
 
-	if doc, err := load_from_url(u, jar, p.ProxyUrl); err == nil {
-		if timetable, err := fetchTimetable(doc); err == nil {
-			printTimetable(&timetable, p)
-		} else {
-			return err
-		}
+	if doc, err = load_from_url(u, jar, p.ProxyUrl); err != nil {
+		return err
 	} else {
+		// Сохраняем куки в файл
+		if err := saveCookiesToFile(jar, "cookies.txt", u); err != nil {
+			return errtype.RuntimeError(fmt.Errorf("ошибка сохранения куки: %s", err))
+		}
+	}
+
+	if timetable, err = fetchTimetable(doc); err != nil {
 		return err
 	}
 
-	// Сохраняем куки в файл
-	if err := saveCookiesToFile(jar, "cookies.txt", u); err != nil {
-		return errtype.RuntimeError(fmt.Errorf("ошибка сохранения куки: %s", err))
+	if p.Ical {
+		return writeIcal(&timetable, p)
+	} else {
+		printTimetable(&timetable, p)
 	}
 
 	return nil

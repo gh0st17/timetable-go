@@ -16,6 +16,8 @@ type Params struct {
 	Group     uint8
 	GroupName string
 	WorkDir   string
+	OutDir    string
+	FileName  string
 	ProxyUrl  *url.URL
 	List      bool
 	Clear     bool
@@ -48,8 +50,8 @@ timetable --clear
   --sleep       - Время (в секундах) простоя после загрузки недели для семестра
   --session     - Расписание сессии (блокирует выбор недели: -w, -n, -c)
   --clear       - Очистить кэш групп
-  --workdir, -d - Путь рабочей директории (кэш)
-  --output,  -o - Путь для вывода
+  --workdir, -d - Путь рабочей директории (кэш) (по умолчанию равен pwd)
+  --output,  -o - Путь для вывода (если не задан то равен -d)
 `
 
 	fmt.Println(helpText)
@@ -94,6 +96,10 @@ func (p *Params) parseArgs(args *[]string) error {
 			p.Session = true
 		} else if arg == "--ics" {
 			p.Ical = true
+		} else if arg == "--workdir" || arg == "-d" {
+			str_ptr = &p.WorkDir
+		} else if arg == "--output" || arg == "-o" {
+			str_ptr = &p.OutDir
 		} else if u8_ptr == nil && str_ptr == nil {
 			printHelp()
 			return errtype.ArgsError(fmt.Errorf("неизвестный аргумент '%s'", arg))

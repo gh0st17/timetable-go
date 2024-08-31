@@ -117,5 +117,6 @@ func trimWhitespaces(str *string) {
 	*str = strings.ReplaceAll(*str, "\t", "")
 	*str = strings.ReplaceAll(*str, "\n", "")
 	*str = strings.ReplaceAll(*str, "  ", " ")
+	*str = strings.ReplaceAll(*str, "\u00a0", " ")
 	*str = strings.TrimSpace(*str)
 }
