@@ -48,14 +48,18 @@ timetable --clear
   --ics         - Вывод в ics файл
   --proxy       - Использовать прокси
                   <протокол://адрес:порт>
-  --sleep       - Время (в секундах) простоя после загрузки недели для семестра
   --session     - Расписание сессии (блокирует выбор недели: -w, -n, -c)
   --clear       - Очистить кэш групп
   --workdir, -d - Путь рабочей директории (кэш) (по умолчанию равен pwd)
   --output,  -o - Путь для вывода (если не задан то равен -d)
+             -v - Печать информации о версии программы
 `
 
 	fmt.Println(helpText)
+}
+
+func printVersionInfo() {
+	fmt.Println("timetable v1.0.1")
 }
 
 func (p *Params) parseArgs(args *[]string) error {
@@ -76,6 +80,9 @@ func (p *Params) parseArgs(args *[]string) error {
 			p.Course = parseUint8(arg)
 		} else if arg == "-h" || arg == "--help" {
 			printHelp()
+			os.Exit(0)
+		} else if arg == "-V" {
+			printVersionInfo()
 			os.Exit(0)
 		} else if arg == "-g" || arg == "--group" {
 			u8_ptr = &p.Group
