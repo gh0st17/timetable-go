@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"timetable/manager/basic_types"
+	"timetable/basic_types"
 )
 
 const ()

@@ -3,6 +3,7 @@ package manager
 import (
 	"bufio"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,8 +13,12 @@ import (
 
 // Чтение файла и возврат массива строк
 func readLines(filePath string) ([]string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
+	var (
+		file *os.File
+		err  error
+	)
+
+	if file, err = os.Open(filePath); err != nil {
 		return nil, err
 	}
 	defer file.Close()
@@ -23,7 +28,7 @@ func readLines(filePath string) ([]string, error) {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, err
 	}
 
@@ -36,17 +41,20 @@ func readLines(filePath string) ([]string, error) {
 
 // Функция для записи массива строк в файл
 func writeLines(filePath string, lines *[]string) error {
+	var (
+		file *os.File
+		err  error
+	)
+
 	// Открываем файл для записи (перезаписываем файл)
-	file, err := os.Create(filePath)
-	if err != nil {
+	if file, err = os.Create(filePath); err != nil {
 		return err
 	}
 	defer file.Close()
 
 	// Записываем строки в файл
 	for _, line := range *lines {
-		_, err := file.WriteString(line + "\n")
-		if err != nil {
+		if _, err := file.WriteString(line + "\n"); err != nil {
 			return err
 		}
 	}
@@ -126,28 +134,27 @@ func fileExists(filePath string) bool {
 
 // Функция для проверки существования директории
 func dirExists(dirPath string) bool {
-	info, err := os.Stat(dirPath)
-	if os.IsNotExist(err) {
+	if info, err := os.Stat(dirPath); err != nil {
 		return false
-	} else if err != nil {
-		return false
+	} else {
+		return info.IsDir()
 	}
-	return info.IsDir()
 }
 
 // Функция для создания директории
 func createDir(dirPath string) error {
-	err := os.Mkdir(dirPath, 0755) // Права доступа: rwxr-xr-x
-	if err != nil {
-		return err
-	}
-	return nil
+	// Права доступа: rwxr-xr-x
+	return os.Mkdir(dirPath, 0755)
 }
 
 // Функция для удаления всех файлов в папке
 func removeAllFilesInDir(dirPath string) error {
-	entries, err := os.ReadDir(dirPath)
-	if err != nil {
+	var (
+		entries []fs.DirEntry
+		err     error
+	)
+
+	if entries, err = os.ReadDir(dirPath); err != nil {
 		return err
 	}
 
@@ -155,8 +162,7 @@ func removeAllFilesInDir(dirPath string) error {
 		// Проверяем, что это файл, а не директория
 		if !entry.IsDir() {
 			filePath := filepath.Join(dirPath, entry.Name())
-			err := os.Remove(filePath)
-			if err != nil {
+			if err = os.Remove(filePath); err != nil {
 				return err
 			}
 		}
@@ -167,9 +173,9 @@ func removeAllFilesInDir(dirPath string) error {
 
 // Функция для получения абсолютного пути запускаемой программы
 func getWd() (string, error) {
-	executable, err := os.Getwd()
-	if err != nil {
+	if executable, err := os.Getwd(); err != nil {
 		return "", err
+	} else {
+		return filepath.Abs(executable)
 	}
-	return filepath.Abs(executable)
 }
