@@ -10,8 +10,6 @@ import (
 	"timetable/basic_types"
 )
 
-const ()
-
 func calcWeek() uint8 {
 	today := time.Now()
 	_, week := today.ISOWeek()
@@ -42,7 +40,7 @@ func getDate(month int, day int, hour int, min int) (start string, end string) {
 
 	date := time.Date(
 		year, time.Month(month),
-		day, hour, min, 0, 0, time.UTC, // time.FixedZone("Europe/Moscow", 3),
+		day, hour, min, 0, 0, time.UTC,
 	)
 
 	return date.Format("20060102T150405"), (date.Add(time.Minute * 90)).Format("20060102T150405")
@@ -114,7 +112,7 @@ func writeIcal(timetable *[]Day, p *Params) error {
 	fmt.Printf("Имя файла %s\n", p.FileName)
 
 	var dataString string
-	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n"
+	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n\n"
 
 	for _, day := range *timetable {
 		for i, subject := range day.Subjects {
