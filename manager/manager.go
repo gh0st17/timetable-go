@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sort"
 	"timetable/basic_types"
+	"timetable/database"
 	"timetable/errtype"
 	"timetable/manager/parser"
 	"timetable/params"
@@ -115,43 +116,43 @@ func printTimetable(timetable *[]Day, p *Params) {
 	}
 }
 
-func proceedingGroup(p *Params, printOnly bool) error {
-	u, _ := url.Parse(groupUrl(p.Dep, p.Course))
-	jar, _ := cookiejar.New(nil)
-	groupFile := fmt.Sprintf("%s/groups/%d-%d.txt", p.WorkDir, p.Dep, p.Course)
+// func proceedingGroup(p *Params, printOnly bool) error {
+// 	u, _ := url.Parse(groupUrl(p.Dep, p.Course))
+// 	jar, _ := cookiejar.New(nil)
+// 	groupFile := fmt.Sprintf("%s/groups/%d-%d.txt", p.WorkDir, p.Dep, p.Course)
 
-	var (
-		groups []string
-		err    error
-	)
+// 	var (
+// 		groups []string
+// 		err    error
+// 	)
 
-	if fileExists(groupFile) {
-		if groups, err = readLines(groupFile); err != nil {
-			return err
-		}
-	} else {
-		if groups, err = fetchGroups(u, jar, p.ProxyUrl); err != nil {
-			return err
-		}
-		if err = writeLines(groupFile, &groups); err != nil {
-			return err
-		}
-	}
+// 	if fileExists(groupFile) {
+// 		if groups, err = readLines(groupFile); err != nil {
+// 			return err
+// 		}
+// 	} else {
+// 		if groups, err = fetchGroups(u, jar, p.ProxyUrl); err != nil {
+// 			return err
+// 		}
+// 		if err = writeLines(groupFile, &groups); err != nil {
+// 			return err
+// 		}
+// 	}
 
-	if p.Group == 0 {
-		printLines(&groups, p, printOnly)
-	}
+// 	if p.Group == 0 {
+// 		printLines(&groups, p, printOnly)
+// 	}
 
-	if !printOnly && p.Group == 0 {
-		p.GroupName = groups[getUserSelection(&groups)]
-	} else if p.Group > 0 && int(p.Group) <= len(groups) {
-		p.GroupName = groups[p.Group-1]
-	} else if !p.List {
-		return errtype.ArgsError(errors.New("номер группы не существует"))
-	}
+// 	if !printOnly && p.Group == 0 {
+// 		p.GroupName = groups[getUserSelection(&groups)]
+// 	} else if p.Group > 0 && int(p.Group) <= len(groups) {
+// 		p.GroupName = groups[p.Group-1]
+// 	} else if !p.List {
+// 		return errtype.ArgsError(errors.New("номер группы не существует"))
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func proceedingWeek(p *Params) (u *url.URL) {
 	if p.Week != 0 {
@@ -178,12 +179,16 @@ func proceedingWeek(p *Params) (u *url.URL) {
 
 func Run(p *Params) error {
 	var (
+		tdb       database.TimetableDB
 		doc       *html.Node
 		timetable []Day
 		u         *url.URL
 		err       error
 	)
-	jar, _ := cookiejar.New(nil)
+
+	if err = tdb.LoadDB("timetable.db"); err != nil {
+		return err
+	}
 
 	if p.WorkDir == "" {
 		if p.WorkDir, err = getWd(); err != nil {
@@ -201,7 +206,7 @@ func Run(p *Params) error {
 		removeAllFilesInDir(p.WorkDir + "/groups")
 	}
 
-	if err = proceedingGroup(p, p.List); err != nil {
+	if err = proceedingGroupDB(p, &tdb, p.List); err != nil {
 		return err
 	}
 
@@ -218,6 +223,7 @@ func Run(p *Params) error {
 		u = proceedingWeek(p)
 	}
 
+	jar, _ := cookiejar.New(nil)
 	loadCookiesFromFile(jar, "cookies.txt", u)
 	if len(jar.Cookies(u)) == 0 {
 		_, _ = loadFromUrl(u, jar, p.ProxyUrl)
@@ -226,6 +232,9 @@ func Run(p *Params) error {
 	pred := func() (*html.Node, error) {
 		return loadFromUrl(u, jar, p.ProxyUrl)
 	}
+
+	// TO DO
+	// Work with timetable in DB at this line
 
 	if doc, err = retryLoadFromUrl(3, true, pred); err != nil {
 		return err
@@ -237,6 +246,10 @@ func Run(p *Params) error {
 	}
 
 	if timetable, err = fetchTimetable(doc); err != nil {
+		return err
+	}
+
+	if err = tdb.CloseDB(); err != nil {
 		return err
 	}
 

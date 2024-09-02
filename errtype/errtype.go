@@ -42,6 +42,13 @@ func RuntimeError(err error) *Error {
 	}
 }
 
+func DatabaseError(err error) *Error {
+	return &Error{
+		Err:  err,
+		Code: 5,
+	}
+}
+
 func HandleError(err *error) {
 	if *err != nil {
 		fmt.Println(*err)

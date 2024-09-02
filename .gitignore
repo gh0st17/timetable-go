@@ -31,3 +31,5 @@ groups/
 **.ics
 main
 timetable
+*.db
+!empty.db
