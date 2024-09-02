@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func load_from_url(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Node, error) {
+func loadFromUrl(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Node, error) {
 	var (
 		bytes []byte
 		req   *http.Request
@@ -28,7 +28,7 @@ func load_from_url(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Nod
 		Transport: &http.Transport{
 			Proxy: http.ProxyURL(proxyUrl),
 		},
-		Timeout: 20 * time.Second,
+		Timeout: 10 * time.Second,
 	}
 
 	if req, err = http.NewRequest("GET", u.String(), nil); err != nil {
@@ -113,4 +113,29 @@ func loadCookiesFromFile(jar http.CookieJar, filename string, u *url.URL) error 
 	// Добавляем куки в cookie jar
 	jar.SetCookies(u, cookies)
 	return nil
+}
+
+type LoadPredicate func() (*html.Node, error)
+
+func retryLoadFromUrl(attempts int8, print bool, pred LoadPredicate) (*html.Node, error) {
+	var (
+		doc   *html.Node
+		err   error
+		sleep uint64 = 5
+	)
+
+	var i int8
+	for i = 0; i < attempts; i++ {
+		if doc, err = pred(); err == nil {
+			return doc, nil
+		}
+
+		if print {
+			fmt.Printf("Повторная попытка %d через %d секунд\n", i+1, sleep)
+		}
+		time.Sleep(time.Second * time.Duration(sleep))
+		sleep <<= 1
+	}
+
+	return nil, err
 }

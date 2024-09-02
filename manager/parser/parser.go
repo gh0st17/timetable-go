@@ -2,7 +2,7 @@ package parser
 
 import (
 	"strings"
-	"timetable/manager/basic_types"
+	"timetable/basic_types"
 
 	"golang.org/x/net/html"
 )
@@ -90,14 +90,14 @@ func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
 }
 
 // Выкусывем текст
-func ExtractText(n *html.Node) string {
+func ExtractText(n *html.Node) (result string) {
 	if n.Type == html.TextNode {
 		trimWhitespaces(&n.Data)
 		if n.Data != "" {
 			return n.Data
 		}
 	}
-	var result string
+
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		text := ExtractText(c)
 		if text != "" {

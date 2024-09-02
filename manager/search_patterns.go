@@ -4,11 +4,6 @@ import "timetable/manager/parser"
 
 // Параметры поиска тэгов для страницы расписания
 var (
-	date_param = parser.NodeParam{
-		Tag:       "span",
-		Attr_name: "class",
-		Attr_val:  "step-title ms-3 ms-sm-0 mt-2 mb-4 mb-sm-2 py-1 text-body",
-	}
 	day_param = parser.NodeParam{
 		Tag:       "div",
 		Attr_name: "class",

@@ -7,8 +7,8 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"sort"
+	"timetable/basic_types"
 	"timetable/errtype"
-	"timetable/manager/basic_types"
 	"timetable/manager/parser"
 	"timetable/params"
 
@@ -51,7 +51,11 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 		groups      []string
 	)
 
-	if doc, err = load_from_url(u, jar, proxyUrl); err != nil {
+	pred := func() (*html.Node, error) {
+		return loadFromUrl(u, jar, proxyUrl)
+	}
+
+	if doc, err = retryLoadFromUrl(3, false, pred); err != nil {
 		return nil, err
 	}
 
@@ -216,10 +220,14 @@ func Run(p *Params) error {
 
 	loadCookiesFromFile(jar, "cookies.txt", u)
 	if len(jar.Cookies(u)) == 0 {
-		load_from_url(u, jar, p.ProxyUrl)
+		_, _ = loadFromUrl(u, jar, p.ProxyUrl)
 	}
 
-	if doc, err = load_from_url(u, jar, p.ProxyUrl); err != nil {
+	pred := func() (*html.Node, error) {
+		return loadFromUrl(u, jar, p.ProxyUrl)
+	}
+
+	if doc, err = retryLoadFromUrl(3, true, pred); err != nil {
 		return err
 	} else {
 		// Сохраняем куки в файл

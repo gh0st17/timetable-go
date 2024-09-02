@@ -1,7 +1,7 @@
 package manager
 
 import (
-	"timetable/manager/basic_types"
+	"timetable/basic_types"
 	"timetable/manager/parser"
 
 	"golang.org/x/net/html"
@@ -30,15 +30,15 @@ func parseDays(html_days *[]html.Node, timetable *[]Day) {
 		var (
 			day           Day
 			html_subjects []html.Node
-			html_date     []html.Node
+			html_date     *html.Node
 		)
 
-		parser.FindNode(&html_day, &html_date, &date_param)
+		html_date = html_day.FirstChild.NextSibling
 		if html_date == nil {
 			continue
 		}
 
-		day.Date = parser.ExtractText(&html_date[0])
+		day.Date = parser.ExtractText(html_date)
 
 		parser.FindNode(&html_day, &html_subjects, &subj_param)
 		parseSubjects(&html_subjects, &day)
