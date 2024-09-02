@@ -43,7 +43,11 @@ func getDate(month int, day int, hour int, min int) (start string, end string) {
 		day, hour, min, 0, 0, time.UTC,
 	)
 
-	return date.Format("20060102T150405"), (date.Add(time.Minute * 90)).Format("20060102T150405")
+	const format string = "20060102T150405"
+	start = date.Format(format)
+	end = (date.Add(time.Minute * 90)).Format(format)
+
+	return start, end
 }
 
 func stringToHash(dataString string) uint64 {
