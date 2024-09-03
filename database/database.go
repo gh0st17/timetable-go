@@ -28,6 +28,12 @@ type Subject struct {
 	Event_time string
 }
 
+type Criteria struct {
+	Key          string
+	Value        any
+	PostOperator string
+}
+
 type TimetableDB struct {
 	tdb *sql.DB
 }
@@ -106,16 +112,36 @@ func (db *TimetableDB) InsertGroup(groupsLines []string, p *params.Params) error
 }
 
 func (db *TimetableDB) QueryGroup(dep uint8, course uint8) (*sql.Rows, error) {
+	criteries := []Criteria{}
+	c := Criteria{
+		Key:          "department",
+		Value:        dep,
+		PostOperator: "AND",
+	}
+	criteries = append(criteries, c)
+
+	c = Criteria{
+		Key:          "course",
+		Value:        course,
+		PostOperator: "",
+	}
+	criteries = append(criteries, c)
+
+	return db.query("groupName", "groups", &criteries)
+}
+
+func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*sql.Rows, error) {
 	var (
 		err   error
 		query string
 		rows  *sql.Rows
 	)
 
-	query = fmt.Sprintf(`SELECT groupName FROM groups 
-WHERE department=%d AND course=%d
-ORDER BY groupName ASC`,
-		dep, course)
+	query = fmt.Sprintf("SELECT %s FROM %s WHERE ", sel, table)
+	for _, c := range *criteries {
+		query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
+	}
+	query += fmt.Sprintf("ORDER BY %s ASC", sel)
 
 	if rows, err = db.tdb.Query(query); err != nil {
 		return nil, errtype.RuntimeError(
@@ -145,10 +171,12 @@ func (db *TimetableDB) GetGroupsLines(rows *sql.Rows) ([]string, error) {
 	return groupsLines, nil
 }
 
-func (db *TimetableDB) DeleteGroups(dep uint8, course uint8, semType uint8) error {
-	query := fmt.Sprintf(`DELETE FROM groups 
-WHERE department=%d AND course=%d AND semesterType=%d`,
-		dep, course, semType)
+func (db *TimetableDB) Delete(table string, criteries *[]Criteria) error {
+	query := fmt.Sprintf("DELETE FROM %s WHERE ", table)
+
+	for _, c := range *criteries {
+		query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
+	}
 
 	if _, err := db.tdb.Exec(query); err != nil {
 		return errtype.RuntimeError(
