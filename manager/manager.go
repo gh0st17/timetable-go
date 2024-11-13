@@ -160,10 +160,10 @@ func proceedingWeek(p *Params) (u *url.URL) {
 	}
 
 	if p.Next {
-		p.Week = calcWeek() + 1
+		p.Week = calcWeek()
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Current {
-		p.Week = calcWeek()
+		p.Week = calcWeek() - 1
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Week == 0 {
 		u, _ = url.Parse(todayUrl(&p.GroupName))

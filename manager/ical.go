@@ -77,11 +77,16 @@ func getEvent(day *Day, eventIdx int, uid uint64) (event string) {
 		summary   string
 		location  string
 		subject   *Subject = &day.Subjects[eventIdx]
+		offset    int      = 0
 	)
 
 	splittedDate := strings.Split(day.Date, " ")
-	dayInt, _ := strconv.Atoi(splittedDate[1])
-	month := basic_types.LongMonthNames[splittedDate[2]]
+	if len(splittedDate) < 3 {
+		offset = -1
+	}
+
+	dayInt, _ := strconv.Atoi(splittedDate[1+offset])
+	month := basic_types.LongMonthNames[splittedDate[2+offset]]
 
 	splittedTime := strings.Split(day.Subjects[eventIdx].Event_time, " ")
 	splittedClock := strings.Split(splittedTime[0], ":")
