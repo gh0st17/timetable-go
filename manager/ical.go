@@ -17,7 +17,7 @@ func calcWeek() uint8 {
 	if today.Month() >= 8 && today.Day() >= 1 {
 		week -= 34
 	} else {
-		week -= 6
+		week -= 5
 	}
 
 	if week < 1 {
