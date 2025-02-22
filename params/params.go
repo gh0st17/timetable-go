@@ -1,19 +1,25 @@
+// Пакет params предоставляет набор функции для
+// обработки входных параметров программы
+//
+// Основные функции:
+//   - ParseParams: Обрабатывает входные флаги и возвращает
+//     структуру [Params] с результатом обработанных флагов
 package params
 
 import (
-	"errors"
+	"flag"
 	"fmt"
 	"net/url"
 	"os"
-	"strconv"
+	"path/filepath"
 	"timetable/errtype"
 )
 
 type Params struct {
-	Dep       uint8
-	Course    uint8
-	Week      uint8
-	Group     uint8
+	Dep       uint
+	Course    uint
+	Week      uint
+	Group     uint
 	GroupName string
 	WorkDir   string
 	OutDir    string
@@ -27,123 +33,95 @@ type Params struct {
 	Ical      bool
 }
 
-func parseUint8(str string) uint8 {
-	val, err := strconv.ParseUint(str, 10, 8)
-	errtype.HandleError(&err)
-	return uint8(val)
-}
-
+// Печатает справку
 func printHelp() {
-	helpText := `timetable {Институт} {Курс} --group <Число> --week <Число>
-timetable {Институт} {Курс} --list
-timetable --clear
+	program := filepath.Base(os.Args[0])
 
-  Институт      - Номер института от 1 до 12
-  Курс          - Номер курса от 1 до 6
-  --group,   -g - Номер группы из списка
-  --week,    -w - Номер недели от 1 до 18
-  --next     -n - Следующая неделя (блокирует -c, -w)
-  --current  -c - Текущая неделя (блокирует -w)
-  --list,    -l - Показать только список групп
-  --ics         - Вывод в ics файл
-  --proxy       - Использовать прокси
-                  <протокол://адрес:порт>
-  --session     - Расписание сессии (блокирует выбор недели: -w, -n, -c)
-  --clear       - Очистить кэш групп
-  --workdir, -d - Путь рабочей директории (кэш) (по умолчанию равен pwd)
-  --output,  -o - Путь для вывода (если не задан то равен -d)
-             -v - Печать информации о версии программы
-`
+	fmt.Println("Выбор недели:", program, weekExample)
+	fmt.Println("Список групп:", program, listExample)
+	fmt.Println("Очистка кэша:", program, clearExample)
+	fmt.Printf("\nФлаги:\n")
 
-	fmt.Println(helpText)
+	flag.PrintDefaults()
 }
 
-func printVersionInfo() {
-	fmt.Println("timetable v1.0.1")
-}
+// Возвращает структуру Params с прочитанными
+// входными аргументами программы
+func ParseParams() (p *Params, err error) {
+	p = &Params{}
+	flag.Usage = printHelp
+	flag.StringVar(&p.OutDir, "output", "", outPathDesc)
+	flag.StringVar(&p.WorkDir, "workdir", "", workdirDesc)
 
-func (p *Params) parseArgs(args *[]string) error {
-	var (
-		err      error
-		proxyStr string
-		str_ptr  *string
-		u8_ptr   *uint8
-	)
+	var proxyStr string
+	flag.StringVar(&proxyStr, "proxy", "", proxyDesc)
 
-	for i, arg := range *args {
-		if i == 0 {
-			continue
-		}
-		if i == 1 {
-			p.Dep = parseUint8(arg)
-		} else if i == 2 {
-			p.Course = parseUint8(arg)
-		} else if arg == "-h" || arg == "--help" {
-			printHelp()
-			os.Exit(0)
-		} else if arg == "-V" {
-			printVersionInfo()
-			os.Exit(0)
-		} else if arg == "-g" || arg == "--group" {
-			u8_ptr = &p.Group
-		} else if arg == "-w" || arg == "--week" {
-			u8_ptr = &p.Week
-		} else if arg == "--proxy" {
-			str_ptr = &proxyStr
-		} else if arg == "--list" {
-			p.List = true
-		} else if arg == "--clear" {
-			p.Clear = true
-		} else if arg == "--next" || arg == "-n" {
-			p.Next = true
-			p.Week = 0
-		} else if arg == "--current" || arg == "-c" {
-			p.Current = true
-			p.Week = 0
-		} else if arg == "--session" {
-			p.Session = true
-		} else if arg == "--ics" {
-			p.Ical = true
-		} else if arg == "--workdir" || arg == "-d" {
-			str_ptr = &p.WorkDir
-		} else if arg == "--output" || arg == "-o" {
-			str_ptr = &p.OutDir
-		} else if u8_ptr == nil && str_ptr == nil {
-			printHelp()
-			return errtype.ArgsError(fmt.Errorf("неизвестный аргумент '%s'", arg))
-		} else if str_ptr != nil {
-			*str_ptr = arg
-			str_ptr = nil
-		} else if res, err := strconv.ParseUint(arg, 10, 8); err == nil {
-			*u8_ptr = uint8(res)
-			u8_ptr = nil
-		} else {
-			return errtype.ArgsError(fmt.Errorf("неверное значение '%s', требуется число", arg))
-		}
+	flag.UintVar(&p.Dep, "dep", 0, depDesc)
+	flag.UintVar(&p.Course, "course", 0, courseDesc)
+	flag.UintVar(&p.Group, "group", 0, groupDesc)
+	flag.UintVar(&p.Week, "week", 0, weekDesc)
+
+	flag.BoolVar(&p.List, "list", false, listDesc)
+	flag.BoolVar(&p.Clear, "clear", false, clearDesc)
+	flag.BoolVar(&p.Next, "next", false, nextWeekDesc)
+	flag.BoolVar(&p.Current, "current", false, currentWeekDesc)
+	flag.BoolVar(&p.Session, "session", false, sessionDesc)
+	flag.BoolVar(&p.Ical, "ics", false, icsDesc)
+
+	version := flag.Bool("V", false, versionDesc)
+	help := flag.Bool("help", false, helpDesc)
+
+	flag.Parse()
+
+	if *version {
+		fmt.Print(versionText)
+		os.Exit(0)
+	}
+	if *help {
+		printHelp()
+		os.Exit(0)
 	}
 
-	if proxyStr != "" {
-		if p.ProxyUrl, err = url.Parse(proxyStr); err != nil {
-			return errtype.RuntimeError(errors.New("неверный формат адреса прокси"))
-		}
+	if err = checkDep(p); err != nil {
+		return nil, errtype.ErrArgument(err)
+	} else if err = checkCourse(p); err != nil {
+		return nil, errtype.ErrArgument(err)
+	} else if err = checkWeek(p); err != nil {
+		return nil, errtype.ErrArgument(err)
+	}
+
+	return p, nil
+}
+
+func checkDep(p *Params) error {
+	if p.Dep < 1 || p.Dep > 14 || p.Dep == 13 {
+		return ErrDepOutOfBound
+	}
+	return nil
+}
+
+func checkCourse(p *Params) error {
+	if p.Course < 1 || p.Course > 6 {
+		return ErrCourseOutOfBound
 	}
 
 	return nil
 }
 
-func (p *Params) FetchParams() error {
-	args := os.Args
-	if len(args) < 3 {
-		printHelp()
-		return errtype.ArgsError(errors.New("недостаточно аргументов"))
-	}
-
-	if err := p.parseArgs(&args); err != nil {
-		return err
+func checkWeek(p *Params) error {
+	if p.Session {
+		p.Week = 0
+		p.Current = false
+		p.Next = false
+	} else if p.Next {
+		p.Week = 0
+		p.Current = false
+	} else if p.Current {
+		p.Week = 0
 	}
 
 	if p.Week != 0 && p.Week > 18 {
-		return errtype.ParseError(errors.New("номер недели должен быть из [1; 18]"))
+		return ErrWeekInput
 	}
 
 	return nil

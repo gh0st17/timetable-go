@@ -33,7 +33,7 @@ func readLines(filePath string) ([]string, error) {
 	}
 
 	if len(lines) == 0 {
-		return nil, errtype.RuntimeError(fmt.Errorf("файл групп %s пустой", filePath))
+		return nil, errtype.ErrRuntime(fmt.Errorf("файл групп %s пустой", filePath))
 	}
 
 	return lines, nil
@@ -70,12 +70,12 @@ func writeString(filePath string, data *string) error {
 	)
 
 	if file, err = os.Create(filePath); err != nil {
-		return errtype.RuntimeError(fmt.Errorf("ошибка создания файла %s: %s", filePath, err))
+		return errtype.ErrRuntime(fmt.Errorf("ошибка создания файла %s: %s", filePath, err))
 	}
 	defer file.Close()
 
 	if _, err = file.WriteString(*data); err != nil {
-		return errtype.RuntimeError(fmt.Errorf("ошибка записи в файл %s: %s", filePath, err))
+		return errtype.ErrRuntime(fmt.Errorf("ошибка записи в файл %s: %s", filePath, err))
 	}
 
 	return nil

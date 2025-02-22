@@ -24,19 +24,19 @@ func todayUrl(group *string) string {
 	return basic_types.BaseUrl + "index.php?group=" + *group
 }
 
-func weekParam(week uint8) string {
+func weekParam(week uint) string {
 	return fmt.Sprintf("week=%d", week)
 }
 
-func depParam(dep uint8) string {
+func depParam(dep uint) string {
 	return fmt.Sprintf("department=Институт+№%d", dep)
 }
 
-func courseParam(course uint8) string {
+func courseParam(course uint) string {
 	return fmt.Sprintf("course=%d", course)
 }
 
-func groupUrl(dep uint8, course uint8) string {
+func groupUrl(dep uint, course uint) string {
 	return basic_types.BaseUrl + "groups.php?" + depParam(dep) + "&" + courseParam(course)
 }
 
@@ -63,7 +63,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 	parser.FindNode(doc, &group_nodes, &groups_param)
 
 	if len(group_nodes) == 0 {
-		return nil, errtype.ParseError(errors.New("список групп не загружен"))
+		return nil, errtype.ErrParse(errors.New("список групп не загружен"))
 	}
 
 	for _, group := range group_nodes {
@@ -80,7 +80,7 @@ func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
 	parser.FindNode(doc, &html_days, &day_param)
 
 	if len(html_days) == 0 {
-		return nil, errtype.ParseError(errors.New("расписание не найдено"))
+		return nil, errtype.ErrParse(errors.New("расписание не найдено"))
 	}
 
 	parseDays(&html_days, &timetable)
@@ -241,7 +241,7 @@ func Run(p *Params) error {
 	} else {
 		// Сохраняем куки в файл
 		if err := saveCookiesToFile(jar, "cookies.txt", u); err != nil {
-			return errtype.RuntimeError(fmt.Errorf("ошибка сохранения куки: %s", err))
+			return errtype.ErrRuntime(fmt.Errorf("ошибка сохранения куки: %s", err))
 		}
 	}
 

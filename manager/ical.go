@@ -10,7 +10,7 @@ import (
 	"timetable/basic_types"
 )
 
-func calcWeek() uint8 {
+func calcWeek() uint {
 	today := time.Now()
 	_, week := today.ISOWeek()
 
@@ -26,7 +26,7 @@ func calcWeek() uint8 {
 		week = 18
 	}
 
-	return uint8(week)
+	return uint(week)
 }
 
 func getHeader() (header string) {

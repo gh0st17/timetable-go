@@ -13,8 +13,8 @@ import (
 type Group struct {
 	Year         uint16
 	SemesterTime uint8
-	Department   uint8
-	Course       uint8
+	Department   uint
+	Course       uint
 	GroupName    string
 }
 
@@ -63,9 +63,7 @@ func (db *TimetableDB) LoadDB(fileName string) error {
 	var err error
 	db.tdb, err = sql.Open("sqlite3", fileName)
 	if err != nil {
-		return errtype.RuntimeError(
-			fmt.Errorf("ошибка открытия базы данных: %s", err),
-		)
+		return errtype.ErrDataBase(errtype.Join(ErrOpenDB, err))
 	}
 
 	return nil
@@ -73,9 +71,7 @@ func (db *TimetableDB) LoadDB(fileName string) error {
 
 func (db *TimetableDB) CloseDB() error {
 	if err := db.tdb.Close(); err != nil {
-		return errtype.RuntimeError(
-			fmt.Errorf("ошибка закрытия базы данных: %s", err),
-		)
+		return errtype.ErrDataBase(errtype.Join(ErrCloseDB, err))
 	}
 
 	return nil
@@ -87,9 +83,8 @@ func (db *TimetableDB) InsertGroup(groupsLines []string, p *params.Params) error
 		query string
 	)
 
-	query = `INSERT INTO groups 
-(year, semesterTime, department, course, groupName) VALUES
-`
+	query = "INSERT INTO groups " +
+		"(year, semesterTime, department, course, groupName) VALUES "
 
 	groupQ := buildGroup(p)
 	for i, group := range groupsLines {
@@ -103,15 +98,13 @@ func (db *TimetableDB) InsertGroup(groupsLines []string, p *params.Params) error
 	}
 
 	if _, err = db.tdb.Exec(query); err != nil {
-		return errtype.RuntimeError(
-			fmt.Errorf("ошибка при добавлении записи в базу данных: %s", err),
-		)
+		return errtype.ErrDataBase(errtype.Join(ErrInsetGroup, err))
 	}
 
 	return nil
 }
 
-func (db *TimetableDB) QueryGroup(dep uint8, course uint8) (*sql.Rows, error) {
+func (db *TimetableDB) QueryGroup(dep uint, course uint) (*sql.Rows, error) {
 	criteries := []Criteria{}
 	c := Criteria{
 		Key:          "department",
@@ -144,9 +137,7 @@ func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*
 	query += fmt.Sprintf("ORDER BY %s ASC", sel)
 
 	if rows, err = db.tdb.Query(query); err != nil {
-		return nil, errtype.RuntimeError(
-			fmt.Errorf("ошибка при запросе групп в базе данных: %s", err),
-		)
+		return nil, errtype.ErrDataBase(errtype.Join(ErrQueryGroup, err))
 	}
 
 	return rows, nil
@@ -161,9 +152,7 @@ func (db *TimetableDB) GetGroupsLines(rows *sql.Rows) ([]string, error) {
 	for rows.Next() {
 		err := rows.Scan(&line)
 		if err != nil {
-			return nil, errtype.DatabaseError(
-				fmt.Errorf("ошибка чтения базы данных: %s", err),
-			)
+			return nil, errtype.ErrDataBase(errtype.Join(ErrReadGroups, err))
 		}
 		groupsLines = append(groupsLines, line)
 	}
@@ -179,9 +168,7 @@ func (db *TimetableDB) Delete(table string, criteries *[]Criteria) error {
 	}
 
 	if _, err := db.tdb.Exec(query); err != nil {
-		return errtype.RuntimeError(
-			fmt.Errorf("ошибка при запросе удаления групп в базе данных: %s", err),
-		)
+		return errtype.ErrDataBase(errtype.Join(ErrDelete, err))
 	}
 
 	return nil

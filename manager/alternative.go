@@ -47,7 +47,7 @@ func proceedingGroupDB(p *Params, tdb *database.TimetableDB, printOnly bool) err
 	} else if p.Group > 0 && int(p.Group) <= len(groupsLines) {
 		p.GroupName = groupsLines[p.Group-1]
 	} else if !p.List {
-		return errtype.ArgsError(errors.New("номер группы не существует"))
+		return errtype.ErrArgument(errors.New("номер группы не существует"))
 	}
 
 	return nil

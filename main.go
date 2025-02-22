@@ -7,12 +7,11 @@ import (
 )
 
 func main() {
-	var p = params.Params{}
-	if err := p.FetchParams(); err != nil {
-		errtype.HandleError(&err)
-	}
-
-	if err := manager.Run(&p); err != nil {
-		errtype.HandleError(&err)
+	if p, err := params.ParseParams(); err != nil {
+		errtype.ErrorHandler(errtype.ErrArgument(err))
+	} else {
+		if err := manager.Run(p); err != nil {
+			errtype.ErrorHandler(err)
+		}
 	}
 }
