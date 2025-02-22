@@ -7,19 +7,23 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"timetable/basic_types"
+
+	"github.com/gh0st17/timetable-go/internal/basic_types"
 )
 
-const ()
-
-func calcWeek() uint8 {
+func calcWeek() uint {
 	today := time.Now()
 	_, week := today.ISOWeek()
 
 	if today.Month() >= 8 && today.Day() >= 1 {
 		week -= 34
 	} else {
-		week -= 6
+		feb8 := time.Date(
+			today.Year(), time.February, 8,
+			0, 0, 0, 0, today.Location(),
+		)
+		_, feb8Week := feb8.ISOWeek()
+		week -= feb8Week - 1
 	}
 
 	if week < 1 {
@@ -28,7 +32,7 @@ func calcWeek() uint8 {
 		week = 18
 	}
 
-	return uint8(week)
+	return uint(week)
 }
 
 func getHeader() (header string) {
@@ -42,10 +46,14 @@ func getDate(month int, day int, hour int, min int) (start string, end string) {
 
 	date := time.Date(
 		year, time.Month(month),
-		day, hour, min, 0, 0, time.UTC, // time.FixedZone("Europe/Moscow", 3),
+		day, hour, min, 0, 0, time.UTC,
 	)
 
-	return date.Format("20060102T150405"), (date.Add(time.Minute * 90)).Format("20060102T150405")
+	const format string = "20060102T150405"
+	start = date.Format(format)
+	end = (date.Add(time.Minute * 90)).Format(format)
+
+	return start, end
 }
 
 func stringToHash(dataString string) uint64 {
@@ -75,11 +83,16 @@ func getEvent(day *Day, eventIdx int, uid uint64) (event string) {
 		summary   string
 		location  string
 		subject   *Subject = &day.Subjects[eventIdx]
+		offset    int      = 0
 	)
 
 	splittedDate := strings.Split(day.Date, " ")
-	dayInt, _ := strconv.Atoi(splittedDate[1])
-	month := basic_types.LongMonthNames[splittedDate[2]]
+	if len(splittedDate) < 3 {
+		offset = -1
+	}
+
+	dayInt, _ := strconv.Atoi(splittedDate[1+offset])
+	month := basic_types.LongMonthNames[splittedDate[2+offset]]
 
 	splittedTime := strings.Split(day.Subjects[eventIdx].Event_time, " ")
 	splittedClock := strings.Split(splittedTime[0], ":")
@@ -114,7 +127,7 @@ func writeIcal(timetable *[]Day, p *Params) error {
 	fmt.Printf("Имя файла %s\n", p.FileName)
 
 	var dataString string
-	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n"
+	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n\n"
 
 	for _, day := range *timetable {
 		for i, subject := range day.Subjects {

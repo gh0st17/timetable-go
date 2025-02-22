@@ -7,10 +7,12 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"sort"
-	"timetable/basic_types"
-	"timetable/errtype"
-	"timetable/manager/parser"
-	"timetable/params"
+
+	"github.com/gh0st17/timetable-go/errtype"
+	"github.com/gh0st17/timetable-go/internal/basic_types"
+	"github.com/gh0st17/timetable-go/internal/database"
+	"github.com/gh0st17/timetable-go/manager/internal/parser"
+	"github.com/gh0st17/timetable-go/params"
 
 	"golang.org/x/net/html"
 )
@@ -23,19 +25,19 @@ func todayUrl(group *string) string {
 	return basic_types.BaseUrl + "index.php?group=" + *group
 }
 
-func weekParam(week uint8) string {
+func weekParam(week uint) string {
 	return fmt.Sprintf("week=%d", week)
 }
 
-func depParam(dep uint8) string {
+func depParam(dep uint) string {
 	return fmt.Sprintf("department=Институт+№%d", dep)
 }
 
-func courseParam(course uint8) string {
+func courseParam(course uint) string {
 	return fmt.Sprintf("course=%d", course)
 }
 
-func groupUrl(dep uint8, course uint8) string {
+func groupUrl(dep uint, course uint) string {
 	return basic_types.BaseUrl + "groups.php?" + depParam(dep) + "&" + courseParam(course)
 }
 
@@ -62,7 +64,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 	parser.FindNode(doc, &group_nodes, &groups_param)
 
 	if len(group_nodes) == 0 {
-		return nil, errtype.ParseError(errors.New("список групп не загружен"))
+		return nil, errtype.ErrParse(errors.New("список групп не загружен"))
 	}
 
 	for _, group := range group_nodes {
@@ -79,7 +81,7 @@ func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
 	parser.FindNode(doc, &html_days, &day_param)
 
 	if len(html_days) == 0 {
-		return nil, errtype.ParseError(errors.New("расписание не найдено"))
+		return nil, errtype.ErrParse(errors.New("расписание не найдено"))
 	}
 
 	parseDays(&html_days, &timetable)
@@ -115,54 +117,16 @@ func printTimetable(timetable *[]Day, p *Params) {
 	}
 }
 
-func proceedingGroup(p *Params, printOnly bool) error {
-	u, _ := url.Parse(groupUrl(p.Dep, p.Course))
-	jar, _ := cookiejar.New(nil)
-	groupFile := fmt.Sprintf("%s/groups/%d-%d.txt", p.WorkDir, p.Dep, p.Course)
-
-	var (
-		groups []string
-		err    error
-	)
-
-	if fileExists(groupFile) {
-		if groups, err = readLines(groupFile); err != nil {
-			return err
-		}
-	} else {
-		if groups, err = fetchGroups(u, jar, p.ProxyUrl); err != nil {
-			return err
-		}
-		if err = writeLines(groupFile, &groups); err != nil {
-			return err
-		}
-	}
-
-	if p.Group == 0 {
-		printLines(&groups, p, printOnly)
-	}
-
-	if !printOnly && p.Group == 0 {
-		p.GroupName = groups[getUserSelection(&groups)]
-	} else if p.Group > 0 && int(p.Group) <= len(groups) {
-		p.GroupName = groups[p.Group-1]
-	} else if !p.List {
-		return errtype.ArgsError(errors.New("номер группы не существует"))
-	}
-
-	return nil
-}
-
 func proceedingWeek(p *Params) (u *url.URL) {
 	if p.Week != 0 {
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	}
 
 	if p.Next {
-		p.Week = calcWeek() + 1
+		p.Week = calcWeek()
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Current {
-		p.Week = calcWeek()
+		p.Week = calcWeek() - 1
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Week == 0 {
 		u, _ = url.Parse(todayUrl(&p.GroupName))
@@ -178,12 +142,16 @@ func proceedingWeek(p *Params) (u *url.URL) {
 
 func Run(p *Params) error {
 	var (
+		tdb       database.TimetableDB
 		doc       *html.Node
 		timetable []Day
 		u         *url.URL
 		err       error
 	)
-	jar, _ := cookiejar.New(nil)
+
+	if err = tdb.LoadDB("timetable.db"); err != nil {
+		return err
+	}
 
 	if p.WorkDir == "" {
 		if p.WorkDir, err = getWd(); err != nil {
@@ -201,7 +169,7 @@ func Run(p *Params) error {
 		removeAllFilesInDir(p.WorkDir + "/groups")
 	}
 
-	if err = proceedingGroup(p, p.List); err != nil {
+	if err = proceedingGroupDB(p, &tdb, p.List); err != nil {
 		return err
 	}
 
@@ -218,6 +186,7 @@ func Run(p *Params) error {
 		u = proceedingWeek(p)
 	}
 
+	jar, _ := cookiejar.New(nil)
 	loadCookiesFromFile(jar, "cookies.txt", u)
 	if len(jar.Cookies(u)) == 0 {
 		_, _ = loadFromUrl(u, jar, p.ProxyUrl)
@@ -227,16 +196,23 @@ func Run(p *Params) error {
 		return loadFromUrl(u, jar, p.ProxyUrl)
 	}
 
+	// TO DO
+	// Work with timetable in DB at this line
+
 	if doc, err = retryLoadFromUrl(3, true, pred); err != nil {
 		return err
 	} else {
 		// Сохраняем куки в файл
 		if err := saveCookiesToFile(jar, "cookies.txt", u); err != nil {
-			return errtype.RuntimeError(fmt.Errorf("ошибка сохранения куки: %s", err))
+			return errtype.ErrRuntime(fmt.Errorf("ошибка сохранения куки: %s", err))
 		}
 	}
 
 	if timetable, err = fetchTimetable(doc); err != nil {
+		return err
+	}
+
+	if err = tdb.CloseDB(); err != nil {
 		return err
 	}
 
