@@ -1,7 +1,7 @@
 package manager
 
 import (
-	"timetable/basic_types"
+	"timetable/internal/basic_types"
 	"timetable/manager/parser"
 
 	"golang.org/x/net/html"

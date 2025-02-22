@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"timetable/basic_types"
+	"timetable/internal/basic_types"
 )
 
 func calcWeek() uint {
@@ -17,7 +17,12 @@ func calcWeek() uint {
 	if today.Month() >= 8 && today.Day() >= 1 {
 		week -= 34
 	} else {
-		week -= 5
+		feb8 := time.Date(
+			today.Year(), time.February, 8,
+			0, 0, 0, 0, today.Location(),
+		)
+		_, feb8Week := feb8.ISOWeek()
+		week -= feb8Week - 1
 	}
 
 	if week < 1 {

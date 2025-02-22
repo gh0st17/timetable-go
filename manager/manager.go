@@ -7,9 +7,9 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"sort"
-	"timetable/basic_types"
-	"timetable/database"
 	"timetable/errtype"
+	"timetable/internal/basic_types"
+	"timetable/internal/database"
 	"timetable/manager/parser"
 	"timetable/params"
 

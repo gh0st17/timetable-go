@@ -2,7 +2,7 @@ package parser
 
 import (
 	"strings"
-	"timetable/basic_types"
+	"timetable/internal/basic_types"
 
 	"golang.org/x/net/html"
 )
