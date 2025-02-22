@@ -116,44 +116,6 @@ func printTimetable(timetable *[]Day, p *Params) {
 	}
 }
 
-// func proceedingGroup(p *Params, printOnly bool) error {
-// 	u, _ := url.Parse(groupUrl(p.Dep, p.Course))
-// 	jar, _ := cookiejar.New(nil)
-// 	groupFile := fmt.Sprintf("%s/groups/%d-%d.txt", p.WorkDir, p.Dep, p.Course)
-
-// 	var (
-// 		groups []string
-// 		err    error
-// 	)
-
-// 	if fileExists(groupFile) {
-// 		if groups, err = readLines(groupFile); err != nil {
-// 			return err
-// 		}
-// 	} else {
-// 		if groups, err = fetchGroups(u, jar, p.ProxyUrl); err != nil {
-// 			return err
-// 		}
-// 		if err = writeLines(groupFile, &groups); err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	if p.Group == 0 {
-// 		printLines(&groups, p, printOnly)
-// 	}
-
-// 	if !printOnly && p.Group == 0 {
-// 		p.GroupName = groups[getUserSelection(&groups)]
-// 	} else if p.Group > 0 && int(p.Group) <= len(groups) {
-// 		p.GroupName = groups[p.Group-1]
-// 	} else if !p.List {
-// 		return errtype.ArgsError(errors.New("номер группы не существует"))
-// 	}
-
-// 	return nil
-// }
-
 func proceedingWeek(p *Params) (u *url.URL) {
 	if p.Week != 0 {
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
