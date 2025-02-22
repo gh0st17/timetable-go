@@ -1,4 +1,4 @@
-module timetable-go
+module github.com/gh0st17/timetable-go
 
 go 1.24.0
 

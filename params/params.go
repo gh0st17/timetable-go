@@ -82,6 +82,9 @@ func ParseParams() (p *Params, err error) {
 		printHelp()
 		os.Exit(0)
 	}
+	if p.Clear {
+		return p, nil
+	}
 
 	if err = checkDep(p); err != nil {
 		return nil, errtype.ErrArgument(err)

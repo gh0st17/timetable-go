@@ -3,7 +3,6 @@ package manager
 import (
 	"bufio"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -71,45 +70,6 @@ func getUserSelection(lines *[]string) uint64 {
 		fmt.Println()
 		return result - 1
 	}
-}
-
-// Функция для проверки существования директории
-func dirExists(dirPath string) bool {
-	if info, err := os.Stat(dirPath); err != nil {
-		return false
-	} else {
-		return info.IsDir()
-	}
-}
-
-// Функция для создания директории
-func createDir(dirPath string) error {
-	// Права доступа: rwxr-xr-x
-	return os.Mkdir(dirPath, 0755)
-}
-
-// Функция для удаления всех файлов в папке
-func removeAllFilesInDir(dirPath string) error {
-	var (
-		entries []fs.DirEntry
-		err     error
-	)
-
-	if entries, err = os.ReadDir(dirPath); err != nil {
-		return err
-	}
-
-	for _, entry := range entries {
-		// Проверяем, что это файл, а не директория
-		if !entry.IsDir() {
-			filePath := filepath.Join(dirPath, entry.Name())
-			if err = os.Remove(filePath); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 // Функция для получения абсолютного пути запускаемой программы

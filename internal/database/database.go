@@ -161,15 +161,22 @@ func (db *TimetableDB) GetGroupsLines(rows *sql.Rows) ([]string, error) {
 	return groupsLines, nil
 }
 
-func (db *TimetableDB) Delete(table string, criteries *[]Criteria) error {
+func (db *TimetableDB) Delete(table string, criteries []Criteria) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE ", table)
 
-	for _, c := range *criteries {
-		query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
+	if len(criteries) > 0 {
+		for _, c := range criteries {
+			query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
+		}
+	} else {
+		query += "1;"
 	}
 
-	if _, err := db.tdb.Exec(query); err != nil {
+	if res, err := db.tdb.Exec(query); err != nil {
 		return errtype.ErrDataBase(errtype.Join(ErrDelete, err))
+	} else {
+		affected, _ := res.RowsAffected()
+		fmt.Println("Удалено строк:", affected)
 	}
 
 	return nil

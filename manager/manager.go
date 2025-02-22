@@ -163,10 +163,8 @@ func Run(p *Params) error {
 		}
 	}
 
-	if !dirExists(p.WorkDir + "/groups") {
-		createDir(p.WorkDir + "/groups")
-	} else if p.Clear {
-		removeAllFilesInDir(p.WorkDir + "/groups")
+	if p.Clear {
+		return tdb.Delete("groups", []database.Criteria{})
 	}
 
 	if err = proceedingGroupDB(p, &tdb, p.List); err != nil {
