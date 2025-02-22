@@ -12,7 +12,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"timetable/errtype"
+
+	"github.com/gh0st17/timetable-go/errtype"
 )
 
 type Params struct {

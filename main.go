@@ -1,9 +1,9 @@
 package main
 
 import (
-	"timetable/errtype"
-	"timetable/manager"
-	"timetable/params"
+	"github.com/gh0st17/timetable-go/errtype"
+	"github.com/gh0st17/timetable-go/manager"
+	"github.com/gh0st17/timetable-go/params"
 )
 
 func main() {

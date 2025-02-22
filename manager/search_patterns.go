@@ -1,6 +1,6 @@
 package manager
 
-import "timetable/manager/parser"
+import "github.com/gh0st17/timetable-go/manager/internal/parser"
 
 // Параметры поиска тэгов для страницы расписания
 var (

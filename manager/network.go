@@ -9,7 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
-	"timetable/errtype"
+
+	"github.com/gh0st17/timetable-go/errtype"
 
 	"golang.org/x/net/html"
 )

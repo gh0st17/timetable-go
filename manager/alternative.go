@@ -5,8 +5,9 @@ import (
 	"errors"
 	"net/http/cookiejar"
 	"net/url"
-	"timetable/errtype"
-	"timetable/internal/database"
+
+	"github.com/gh0st17/timetable-go/errtype"
+	"github.com/gh0st17/timetable-go/internal/database"
 )
 
 func proceedingGroupDB(p *Params, tdb *database.TimetableDB, printOnly bool) error {

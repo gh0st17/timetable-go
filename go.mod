@@ -1,4 +1,4 @@
-module timetable
+module timetable-go
 
 go 1.24.0
 

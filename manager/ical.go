@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"timetable/internal/basic_types"
+
+	"github.com/gh0st17/timetable-go/internal/basic_types"
 )
 
 func calcWeek() uint {

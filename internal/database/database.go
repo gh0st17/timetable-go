@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-	"timetable/errtype"
-	"timetable/params"
+
+	"github.com/gh0st17/timetable-go/errtype"
+	"github.com/gh0st17/timetable-go/params"
 
 	_ "github.com/mattn/go-sqlite3"
 )

@@ -7,11 +7,12 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"sort"
-	"timetable/errtype"
-	"timetable/internal/basic_types"
-	"timetable/internal/database"
-	"timetable/manager/parser"
-	"timetable/params"
+
+	"github.com/gh0st17/timetable-go/errtype"
+	"github.com/gh0st17/timetable-go/internal/basic_types"
+	"github.com/gh0st17/timetable-go/internal/database"
+	"github.com/gh0st17/timetable-go/manager/internal/parser"
+	"github.com/gh0st17/timetable-go/params"
 
 	"golang.org/x/net/html"
 )

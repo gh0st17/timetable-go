@@ -8,59 +8,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"timetable/errtype"
+
+	"github.com/gh0st17/timetable-go/errtype"
 )
-
-// Чтение файла и возврат массива строк
-func readLines(filePath string) ([]string, error) {
-	var (
-		file *os.File
-		err  error
-	)
-
-	if file, err = os.Open(filePath); err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err = scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	if len(lines) == 0 {
-		return nil, errtype.ErrRuntime(fmt.Errorf("файл групп %s пустой", filePath))
-	}
-
-	return lines, nil
-}
-
-// Функция для записи массива строк в файл
-func writeLines(filePath string, lines *[]string) error {
-	var (
-		file *os.File
-		err  error
-	)
-
-	// Открываем файл для записи (перезаписываем файл)
-	if file, err = os.Create(filePath); err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Записываем строки в файл
-	for _, line := range *lines {
-		if _, err := file.WriteString(line + "\n"); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
 
 // Функция для записи строки в файл
 func writeString(filePath string, data *string) error {
@@ -121,15 +71,6 @@ func getUserSelection(lines *[]string) uint64 {
 		fmt.Println()
 		return result - 1
 	}
-}
-
-// Функция для проверки существования файла
-func fileExists(filePath string) bool {
-	if _, err := os.Stat(filePath); err != nil {
-		return false
-	}
-
-	return true
 }
 
 // Функция для проверки существования директории
