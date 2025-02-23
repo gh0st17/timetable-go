@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Возвращает корневой *html.Node страницы, загруженной по ссылке u
 func loadFromUrl(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Node, error) {
 	var (
 		bytes []byte
@@ -53,6 +54,7 @@ func loadFromUrl(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Node,
 	}
 }
 
+// Сохраняет куки в текстовый файл
 func saveCookiesToFile(jar http.CookieJar, filename string, u *url.URL) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -70,6 +72,7 @@ func saveCookiesToFile(jar http.CookieJar, filename string, u *url.URL) error {
 	return nil
 }
 
+// Загружает куки из текстового файла
 func loadCookiesFromFile(jar http.CookieJar, filename string, u *url.URL) error {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -116,8 +119,11 @@ func loadCookiesFromFile(jar http.CookieJar, filename string, u *url.URL) error 
 	return nil
 }
 
+// Предикат для функции загрузки страницы с повтором
+// при неудаче
 type LoadPredicate func() (*html.Node, error)
 
+// Ззагружает страницу с повтором при неудаче
 func retryLoadFromUrl(attempts int8, print bool, pred LoadPredicate) (*html.Node, error) {
 	var (
 		doc   *html.Node

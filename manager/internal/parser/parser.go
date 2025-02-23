@@ -47,6 +47,7 @@ func FindNode(doc *html.Node, param NodeParam) []html.Node {
 	return found
 }
 
+// Извлекает название предмета из html
 func ExtractSubject(html_subj html.Node, subject *basic_types.Subject) {
 	event_name_type := ExtractText(&html_subj)
 	var (
@@ -64,6 +65,7 @@ func ExtractSubject(html_subj html.Node, subject *basic_types.Subject) {
 	subject.Event_type = strings.TrimSpace(event_type)
 }
 
+// Извлекает время и место проведения занятия из html
 func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
 	var (
 		tmp_str    string
@@ -90,7 +92,7 @@ func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
 	}
 }
 
-// Выкусывем текст
+// Извлекает текст внутри тэга
 func ExtractText(n *html.Node) (result string) {
 	if n.Type == html.TextNode {
 		trimWhitespaces(&n.Data)
@@ -113,8 +115,8 @@ func ExtractText(n *html.Node) (result string) {
 	return result
 }
 
+// Удаляет все табуляции, переводы строк и лишние пробелы
 func trimWhitespaces(str *string) {
-	// Удаляем все табуляции, переводы строк и лишние пробелы
 	*str = strings.ReplaceAll(*str, "\t", "")
 	*str = strings.ReplaceAll(*str, "\n", "")
 	*str = strings.ReplaceAll(*str, "  ", " ")

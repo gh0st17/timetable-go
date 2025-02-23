@@ -1,13 +1,13 @@
 package manager
 
 import (
-	"github.com/gh0st17/timetable-go/manager/internal/parser"
-
 	"github.com/gh0st17/timetable-go/internal/basic_types"
+	"github.com/gh0st17/timetable-go/manager/internal/parser"
 
 	"golang.org/x/net/html"
 )
 
+// Разбор предметов
 func parseSubjects(html_subjects []html.Node, day *basic_types.Day) {
 	for i, html_subject := range html_subjects {
 		html_subj_name := parser.FindNode(&html_subject, subj_name_param)[0]
@@ -19,6 +19,7 @@ func parseSubjects(html_subjects []html.Node, day *basic_types.Day) {
 	}
 }
 
+// Разбор учебных дней
 func parseDays(html_days []html.Node, timetable []Day) []Day {
 	for _, html_day := range html_days {
 		var (

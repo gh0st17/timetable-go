@@ -123,6 +123,7 @@ END:VEVENT`,
 		uid, startDate, startDate, endDate, summary, location)
 }
 
+// Запись расписания в файл ics
 func writeIcal(timetable []Day, p *Params) error {
 	fmt.Printf("Имя файла %s\n", p.FileName)
 

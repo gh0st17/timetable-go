@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -21,30 +22,37 @@ type Day = basic_types.Day
 type Subject = basic_types.Subject
 type Params = params.Params
 
+// Возвращает ссылку текущего расписания
 func todayUrl(group *string) string {
 	return basic_types.BaseUrl + "index.php?group=" + *group
 }
 
+// Возвращает параметр номера недели
 func weekParam(week uint) string {
 	return fmt.Sprintf("week=%d", week)
 }
 
+// Возвращает параметр номера института
 func depParam(dep uint) string {
 	return fmt.Sprintf("department=Институт+№%d", dep)
 }
 
+// Возвращает параметр номера курса
 func courseParam(course uint) string {
 	return fmt.Sprintf("course=%d", course)
 }
 
+// Возвращает адрес страницы с выбором группы
 func groupUrl(dep uint, course uint) string {
 	return basic_types.BaseUrl + "groups.php?" + depParam(dep) + "&" + courseParam(course)
 }
 
+// Возвращает адрес страницы с расписанием сессии
 func sessionUrl(group string) string {
 	return basic_types.BaseUrl + "session/index.php?group=" + group
 }
 
+// Загружает список групп по сети
 func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, error) {
 	var (
 		doc         *html.Node
@@ -76,6 +84,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 	return groups, nil
 }
 
+// Выполняет разбор страницы с расписанием
 func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
 	html_days := parser.FindNode(doc, day_param)
 
@@ -88,6 +97,7 @@ func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
 	return timetable, nil
 }
 
+// Печатает расписание в окно консоли
 func printTimetable(timetable []Day, p *Params) {
 	fmt.Printf("Группа %s\n\n", p.GroupName)
 
@@ -116,6 +126,7 @@ func printTimetable(timetable []Day, p *Params) {
 	}
 }
 
+// Обработка части имени файла ics
 func proceedingWeek(p *Params) (u *url.URL) {
 	if p.Week != 0 {
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
@@ -139,6 +150,53 @@ func proceedingWeek(p *Params) (u *url.URL) {
 	return u
 }
 
+// Записывает название группы в p, прочитанное из базы данных
+// или из пользовательского ввода
+func proceedingGroupDB(p *Params, tdb *database.TimetableDB, printOnly bool) error {
+	var (
+		groupsLines []string
+		rows        *sql.Rows
+		err         error
+	)
+
+	if rows, err = tdb.QueryGroup(p.Dep, p.Course); err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if groupsLines, err = tdb.GetGroupsLines(rows); err != nil {
+		return err
+	}
+
+	if len(groupsLines) == 0 {
+		u, _ := url.Parse(groupUrl(p.Dep, p.Course))
+		jar, _ := cookiejar.New(nil)
+
+		if groupsLines, err = fetchGroups(u, jar, p.ProxyUrl); err != nil {
+			return err
+		}
+
+		if err = tdb.InsertGroup(groupsLines, p); err != nil {
+			return err
+		}
+	}
+
+	if p.Group == 0 {
+		printLines(groupsLines, p, printOnly)
+	}
+
+	if !printOnly && p.Group == 0 {
+		p.GroupName = groupsLines[getUserSelection(groupsLines)]
+	} else if p.Group > 0 && int(p.Group) <= len(groupsLines) {
+		p.GroupName = groupsLines[p.Group-1]
+	} else if !p.List {
+		return errtype.ErrArgument(errors.New("номер группы не существует"))
+	}
+
+	return nil
+}
+
+// Запускает работу программы
 func Run(p *Params) error {
 	var (
 		tdb       database.TimetableDB
