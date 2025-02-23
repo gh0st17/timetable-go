@@ -39,7 +39,7 @@ func WriteIcal(timetable []bt.Day, p *params.Params) error {
 
 	icalDoc += "END:VCALENDAR"
 
-	return fs.WriteString(p.OutDir+"/"+p.FileName, &icalDoc)
+	return fs.WriteString(p.OutDir+"/"+p.FileName, icalDoc)
 }
 
 // Рассчитывает номер текущей недели с учетом сезона семестра

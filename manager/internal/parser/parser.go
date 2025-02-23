@@ -10,7 +10,7 @@ package parser
 import (
 	"strings"
 
-	"github.com/gh0st17/timetable-go/manager/internal/basic_types"
+	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
 
 	"golang.org/x/net/html"
 )
@@ -55,12 +55,8 @@ func FindNode(doc *html.Node, param NodeParam) []html.Node {
 }
 
 // Извлекает название предмета из html
-func ExtractSubject(html_subj html.Node, subject *basic_types.Subject) {
+func ExtractSubject(html_subj html.Node) (event_name string, event_type string) {
 	event_name_type := ExtractText(&html_subj)
-	var (
-		event_name string = ""
-		event_type string = ""
-	)
 
 	var splited = strings.Split(event_name_type, " ")
 	for _, s := range splited[:len(splited)-1] {
@@ -68,12 +64,14 @@ func ExtractSubject(html_subj html.Node, subject *basic_types.Subject) {
 	}
 	event_type = splited[len(splited)-1]
 
-	subject.Event_name = strings.TrimSpace(event_name)
-	subject.Event_type = strings.TrimSpace(event_type)
+	event_name = strings.TrimSpace(event_name)
+	event_type = strings.TrimSpace(event_type)
+
+	return event_name, event_type
 }
 
 // Извлекает время и место проведения занятия из html
-func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
+func ExtractPlace(html_place *html.Node) (subject bt.Subject) {
 	var (
 		tmp_str    string
 		educs_html = []html.Node{}
@@ -97,12 +95,14 @@ func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
 			subject.Places = append(subject.Places, tmp_str)
 		}
 	}
+
+	return subject
 }
 
 // Извлекает текст внутри тэга
 func ExtractText(n *html.Node) (result string) {
 	if n.Type == html.TextNode {
-		trimWhitespaces(&n.Data)
+		n.Data = trimWhitespaces(n.Data)
 		if n.Data != "" {
 			return n.Data
 		}
@@ -118,15 +118,16 @@ func ExtractText(n *html.Node) (result string) {
 		}
 	}
 
-	trimWhitespaces(&result)
-	return result
+	return trimWhitespaces(result)
 }
 
 // Удаляет все табуляции, переводы строк и лишние пробелы
-func trimWhitespaces(str *string) {
-	*str = strings.ReplaceAll(*str, "\t", "")
-	*str = strings.ReplaceAll(*str, "\n", "")
-	*str = strings.ReplaceAll(*str, "  ", " ")
-	*str = strings.ReplaceAll(*str, "\u00a0", " ")
-	*str = strings.TrimSpace(*str)
+func trimWhitespaces(str string) string {
+	str = strings.ReplaceAll(str, "\t", "")
+	str = strings.ReplaceAll(str, "\n", "")
+	str = strings.ReplaceAll(str, "  ", " ")
+	str = strings.ReplaceAll(str, "\u00a0", " ")
+	str = strings.TrimSpace(str)
+
+	return str
 }

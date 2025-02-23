@@ -8,15 +8,19 @@ import (
 )
 
 // Разбор предметов
-func parseSubjects(html_subjects []html.Node, day *bt.Day) {
+func parseSubjects(html_subjects []html.Node, day bt.Day) bt.Day {
 	for i, html_subject := range html_subjects {
 		html_subj_name := parser.FindNode(&html_subject, subj_name_param)[0]
 		day.Subjects = append(day.Subjects, bt.Subject{})
-		parser.ExtractSubject(html_subj_name, &day.Subjects[i])
+		e_type, e_name := parser.ExtractSubject(html_subj_name)
 
 		html_place := parser.FindNode(&html_subject, place_block_param)[0]
-		parser.ExtractPlace(&html_place, &day.Subjects[i])
+		day.Subjects[i] = parser.ExtractPlace(&html_place)
+		day.Subjects[i].Event_name = e_name
+		day.Subjects[i].Event_type = e_type
 	}
+
+	return day
 }
 
 // Разбор учебных дней
@@ -36,7 +40,7 @@ func parseDays(html_days []html.Node, timetable []bt.Day) []bt.Day {
 		day.Date = parser.ExtractText(html_date)
 
 		html_subjects = parser.FindNode(&html_day, subj_param)
-		parseSubjects(html_subjects, &day)
+		day = parseSubjects(html_subjects, day)
 
 		timetable = append(timetable, day)
 	}

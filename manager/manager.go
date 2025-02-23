@@ -114,8 +114,8 @@ func Run(p *params.Params) error {
 }
 
 // Возвращает ссылку текущего расписания
-func todayUrl(group *string) string {
-	return bt.BaseUrl + "index.php?group=" + *group
+func todayUrl(group string) string {
+	return bt.BaseUrl + "index.php?group=" + group
 }
 
 // Возвращает параметр номера недели
@@ -230,14 +230,14 @@ func proceedingWeek(p *params.Params) (u *url.URL) {
 		p.Week = ical.CalcWeek() - 1
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Week == 0 {
-		u, _ = url.Parse(todayUrl(&p.GroupName))
+		u, _ = url.Parse(todayUrl(p.GroupName))
 		p.FileName += "Today.ics"
 		return u
 	}
 
 	p.FileName += ".ics"
 
-	u, _ = url.Parse(todayUrl(&p.GroupName) + "&" + weekParam(p.Week))
+	u, _ = url.Parse(todayUrl(p.GroupName) + "&" + weekParam(p.Week))
 	return u
 }
 

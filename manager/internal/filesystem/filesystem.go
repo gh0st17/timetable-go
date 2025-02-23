@@ -85,7 +85,7 @@ func LoadCookiesFromFile(jar http.CookieJar, filename string, u *url.URL) error 
 }
 
 // Функция для записи строки в файл
-func WriteString(filePath string, data *string) error {
+func WriteString(filePath string, data string) error {
 	var (
 		file *os.File
 		err  error
@@ -96,7 +96,7 @@ func WriteString(filePath string, data *string) error {
 	}
 	defer file.Close()
 
-	if _, err = file.WriteString(*data); err != nil {
+	if _, err = file.WriteString(data); err != nil {
 		return errtype.ErrRuntime(fmt.Errorf("ошибка записи в файл %s: %s", filePath, err))
 	}
 
