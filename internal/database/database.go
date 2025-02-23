@@ -121,10 +121,10 @@ func (db *TimetableDB) QueryGroup(dep uint, course uint) (*sql.Rows, error) {
 	}
 	criteries = append(criteries, c)
 
-	return db.query("groupName", "groups", &criteries)
+	return db.query("groupName", "groups", criteries)
 }
 
-func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*sql.Rows, error) {
+func (db *TimetableDB) query(sel string, table string, criteries []Criteria) (*sql.Rows, error) {
 	var (
 		err   error
 		query string
@@ -132,7 +132,7 @@ func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*
 	)
 
 	query = fmt.Sprintf("SELECT %s FROM %s WHERE ", sel, table)
-	for _, c := range *criteries {
+	for _, c := range criteries {
 		query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
 	}
 	query += fmt.Sprintf("ORDER BY %s ASC", sel)

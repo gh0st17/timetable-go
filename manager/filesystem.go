@@ -31,21 +31,21 @@ func writeString(filePath string, data *string) error {
 }
 
 // Печать строк с нумерацией
-func printLines(lines *[]string, p *Params, printOnly bool) {
+func printLines(lines []string, p *Params, printOnly bool) {
 	if printOnly {
-		for _, line := range *lines {
+		for _, line := range lines {
 			fmt.Println(line)
 		}
 	} else {
 		fmt.Printf("Группы %d курса института №%d\n\n", p.Course, p.Dep)
-		for i, line := range *lines {
+		for i, line := range lines {
 			fmt.Printf("%d. %s\n", i+1, line)
 		}
 	}
 }
 
 // Обработка пользовательского ввода
-func getUserSelection(lines *[]string) uint64 {
+func getUserSelection(lines []string) uint64 {
 	var (
 		err    error
 		input  string
@@ -62,7 +62,7 @@ func getUserSelection(lines *[]string) uint64 {
 
 		input = strings.TrimSpace(input)
 		result, err = strconv.ParseUint(input, 10, 64)
-		if err != nil || result < 1 || result > uint64(len(*lines)) {
+		if err != nil || result < 1 || result > uint64(len(lines)) {
 			fmt.Println("Неверный ввод. Попробуйте снова.")
 			continue
 		}

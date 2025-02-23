@@ -40,11 +40,11 @@ func proceedingGroupDB(p *Params, tdb *database.TimetableDB, printOnly bool) err
 	}
 
 	if p.Group == 0 {
-		printLines(&groupsLines, p, printOnly)
+		printLines(groupsLines, p, printOnly)
 	}
 
 	if !printOnly && p.Group == 0 {
-		p.GroupName = groupsLines[getUserSelection(&groupsLines)]
+		p.GroupName = groupsLines[getUserSelection(groupsLines)]
 	} else if p.Group > 0 && int(p.Group) <= len(groupsLines) {
 		p.GroupName = groupsLines[p.Group-1]
 	} else if !p.List {

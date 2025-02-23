@@ -123,13 +123,13 @@ END:VEVENT`,
 		uid, startDate, startDate, endDate, summary, location)
 }
 
-func writeIcal(timetable *[]Day, p *Params) error {
+func writeIcal(timetable []Day, p *Params) error {
 	fmt.Printf("Имя файла %s\n", p.FileName)
 
 	var dataString string
 	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n\n"
 
-	for _, day := range *timetable {
+	for _, day := range timetable {
 		for i, subject := range day.Subjects {
 			dataString = buildDataString(p.GroupName+day.Date, &subject)
 			uid := stringToHash(dataString)

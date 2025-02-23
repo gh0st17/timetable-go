@@ -49,7 +49,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 	var (
 		doc         *html.Node
 		err         error
-		group_nodes []html.Node
+		group_nodes = []html.Node{}
 		groups      []string
 	)
 
@@ -61,7 +61,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 		return nil, err
 	}
 
-	parser.FindNode(doc, &group_nodes, &groups_param)
+	group_nodes = parser.FindNode(doc, groups_param)
 
 	if len(group_nodes) == 0 {
 		return nil, errtype.ErrParse(errors.New("список групп не загружен"))
@@ -77,26 +77,25 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 }
 
 func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
-	var html_days []html.Node
-	parser.FindNode(doc, &html_days, &day_param)
+	html_days := parser.FindNode(doc, day_param)
 
 	if len(html_days) == 0 {
 		return nil, errtype.ErrParse(errors.New("расписание не найдено"))
 	}
 
-	parseDays(&html_days, &timetable)
+	timetable = parseDays(html_days, timetable)
 
 	return timetable, nil
 }
 
-func printTimetable(timetable *[]Day, p *Params) {
+func printTimetable(timetable []Day, p *Params) {
 	fmt.Printf("Группа %s\n\n", p.GroupName)
 
 	if p.Week != 0 {
 		fmt.Printf("Учебная неделя №%d\n\n", p.Week)
 	}
 
-	for _, day := range *timetable {
+	for _, day := range timetable {
 		fmt.Println(day.Date)
 		for _, subject := range day.Subjects {
 			fmt.Printf(
@@ -215,9 +214,9 @@ func Run(p *Params) error {
 	}
 
 	if p.Ical {
-		return writeIcal(&timetable, p)
+		return writeIcal(timetable, p)
 	} else {
-		printTimetable(&timetable, p)
+		printTimetable(timetable, p)
 	}
 
 	return nil
