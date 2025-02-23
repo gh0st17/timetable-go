@@ -68,7 +68,7 @@ func ExtractSubject(html_subj html.Node) (event_name string, event_type string) 
 	event_name = strings.TrimSpace(event_name)
 	event_type = strings.TrimSpace(event_type)
 
-	return event_name, event_type
+	return event_type, event_name // Я не перепутал местами, не здесь...
 }
 
 func capFirstRune(str string) string {
