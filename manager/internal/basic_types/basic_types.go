@@ -1,5 +1,6 @@
 package basic_types
 
+// Предтавление предмета в расписании
 type Subject struct {
 	Educators  []string
 	Places     []string
@@ -8,6 +9,7 @@ type Subject struct {
 	Event_time string
 }
 
+// Представление учебного дня
 type Day struct {
 	Subjects []Subject
 	Date     string

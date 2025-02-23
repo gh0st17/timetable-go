@@ -1,9 +1,17 @@
+// Пакет parser предоставляет набор функции для
+// разбора исходного кода страницы с расписанием
+// или со списком групп
+//
+// Основные функции:
+//   - FindNode: Поиск узлов с нужными
+//     параметрами [NodeParam]
 package parser
 
 import (
 	"strings"
+	"unicode"
 
-	"github.com/gh0st17/timetable-go/internal/basic_types"
+	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
 
 	"golang.org/x/net/html"
 )
@@ -23,56 +31,73 @@ var (
 	}
 )
 
-// Поиск узлов
-func FindNode(doc *html.Node, found *[]html.Node, param *NodeParam) {
+// Поиск узлов с нужными параметрами [NodeParam]
+func FindNode(doc *html.Node, param NodeParam) []html.Node {
+	var found []html.Node
+
 	if doc.Type == html.ElementNode && doc.Data == param.Tag {
 		if len(doc.Attr) > 0 && param.Attr_name != "" {
 			for _, attr := range doc.Attr {
 				if attr.Key == param.Attr_name && attr.Val == param.Attr_val {
-					*found = append(*found, *doc)
+					found = append(found, *doc)
 				}
 			}
 		} else if param.Attr_name == "" {
-			*found = append(*found, *doc)
+			found = append(found, *doc)
 		}
 	}
 
 	// Обходим все дочерние узлы
 	for c := doc.FirstChild; c != nil; c = c.NextSibling {
-		FindNode(c, found, param)
+		found = append(found, FindNode(c, param)...)
 	}
+
+	return found
 }
 
-func ExtractSubject(html_subj *[]html.Node, subject *basic_types.Subject) {
-	var event_name_type string
-	for _, html_s := range *html_subj {
-		event_name_type = ExtractText(&html_s)
+// Извлекает название предмета из html
+func ExtractSubject(html_subj html.Node) (event_name string, event_type string) {
+	event_name_type := ExtractText(&html_subj)
 
-		var (
-			event_name string = ""
-			event_type string = ""
-		)
-
-		var splited = strings.Split(event_name_type, " ")
-		for _, s := range splited[:len(splited)-1] {
-			event_name += s + " "
-		}
-		event_type = splited[len(splited)-1]
-
-		subject.Event_name = strings.TrimSpace(event_name)
-		subject.Event_type = strings.TrimSpace(event_type)
+	var splited = strings.Split(event_name_type, " ")
+	for _, s := range splited[:len(splited)-1] {
+		event_name += s + " "
 	}
+	event_type = splited[len(splited)-1]
+
+	event_name = strings.TrimSpace(event_name)
+	event_type = strings.TrimSpace(event_type)
+
+	return event_type, event_name // Я не перепутал местами, не здесь...
 }
 
-func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
+func capFirstRune(str string) string {
+	runes := []rune(str)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
+}
+
+func fixEducatorCase(educator string) string {
+	fio := strings.Split(educator, " ")
+	for i, part := range fio {
+		fio[i] = capFirstRune(strings.ToLower(part))
+	}
+
+	return strings.Join(fio, " ")
+}
+
+// Извлекает имя преподавателя, время и место проведения
+// занятия из html
+func ExtractPlace(html_place *html.Node) (subject bt.Subject) {
 	var (
 		tmp_str    string
-		educs_html []html.Node
+		educs_html = []html.Node{}
 	)
 
-	FindNode(html_place, &educs_html, &educator_param)
+	educs_html = FindNode(html_place, educator_param)
 	for _, html_edu := range educs_html {
-		subject.Educators = append(subject.Educators, ExtractText(&html_edu))
+		educator := fixEducatorCase(ExtractText(&html_edu))
+		subject.Educators = append(subject.Educators, educator)
 	}
 
 	html_place = html_place.FirstChild.NextSibling
@@ -88,12 +113,14 @@ func ExtractPlace(html_place *html.Node, subject *basic_types.Subject) {
 			subject.Places = append(subject.Places, tmp_str)
 		}
 	}
+
+	return subject
 }
 
-// Выкусывем текст
+// Извлекает текст внутри тэга
 func ExtractText(n *html.Node) (result string) {
 	if n.Type == html.TextNode {
-		trimWhitespaces(&n.Data)
+		n.Data = trimWhitespaces(n.Data)
 		if n.Data != "" {
 			return n.Data
 		}
@@ -109,15 +136,16 @@ func ExtractText(n *html.Node) (result string) {
 		}
 	}
 
-	trimWhitespaces(&result)
-	return result
+	return trimWhitespaces(result)
 }
 
-func trimWhitespaces(str *string) {
-	// Удаляем все табуляции, переводы строк и лишние пробелы
-	*str = strings.ReplaceAll(*str, "\t", "")
-	*str = strings.ReplaceAll(*str, "\n", "")
-	*str = strings.ReplaceAll(*str, "  ", " ")
-	*str = strings.ReplaceAll(*str, "\u00a0", " ")
-	*str = strings.TrimSpace(*str)
+// Удаляет все табуляции, переводы строк и лишние пробелы
+func trimWhitespaces(str string) string {
+	str = strings.ReplaceAll(str, "\t", "")
+	str = strings.ReplaceAll(str, "\n", "")
+	str = strings.ReplaceAll(str, "  ", " ")
+	str = strings.ReplaceAll(str, "\u00a0", " ")
+	str = strings.TrimSpace(str)
+
+	return str
 }

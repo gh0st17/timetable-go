@@ -82,6 +82,9 @@ func ParseParams() (p *Params, err error) {
 		printHelp()
 		os.Exit(0)
 	}
+	if p.Clear {
+		return p, nil
+	}
 
 	if err = checkDep(p); err != nil {
 		return nil, errtype.ErrArgument(err)
@@ -94,6 +97,7 @@ func ParseParams() (p *Params, err error) {
 	return p, nil
 }
 
+// Проверяет корректность ввода номера института
 func checkDep(p *Params) error {
 	if p.Dep < 1 || p.Dep > 14 || p.Dep == 13 {
 		return ErrDepOutOfBound
@@ -101,6 +105,7 @@ func checkDep(p *Params) error {
 	return nil
 }
 
+// Проверяет корректность ввода номера курса
 func checkCourse(p *Params) error {
 	if p.Course < 1 || p.Course > 6 {
 		return ErrCourseOutOfBound
@@ -109,6 +114,7 @@ func checkCourse(p *Params) error {
 	return nil
 }
 
+// Проверяет корректность ввода номера недели
 func checkWeek(p *Params) error {
 	if p.Session {
 		p.Week = 0

@@ -3,8 +3,6 @@
 package errtype
 
 import (
-	"compress/gzip"
-	"compress/zlib"
 	"errors"
 	"fmt"
 	"io"
@@ -30,10 +28,6 @@ func localizeErr(err error) error {
 	}
 
 	switch {
-	case errors.Is(err, gzip.ErrHeader) || errors.Is(err, zlib.ErrHeader):
-		return errors.New("ошибка заголовка сжатых данных")
-	case errors.Is(err, gzip.ErrChecksum) || errors.Is(err, zlib.ErrChecksum):
-		return errors.New("неверная контрольная сумма")
 	case errors.Is(err, os.ErrPermission):
 		return errors.New(fmt.Sprint("нет доступа", err))
 	case errors.Is(err, os.ErrExist):

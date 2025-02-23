@@ -1,12 +1,10 @@
 package manager
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -15,6 +13,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Возвращает корневой *html.Node страницы, загруженной по ссылке u
 func loadFromUrl(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Node, error) {
 	var (
 		bytes []byte
@@ -53,71 +52,11 @@ func loadFromUrl(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) (*html.Node,
 	}
 }
 
-func saveCookiesToFile(jar http.CookieJar, filename string, u *url.URL) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Сохраняем куки в файл
-	for _, cookie := range jar.Cookies(u) {
-		_, err := file.WriteString(fmt.Sprintf("%s\t%s\t%s\t%s\t%s\n", cookie.Name, cookie.Value, cookie.Path, cookie.Domain, cookie.Expires.Format(time.RFC1123)))
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func loadCookiesFromFile(jar http.CookieJar, filename string, u *url.URL) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	var cookies []*http.Cookie
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := scanner.Text()
-		parts := strings.Split(line, "\t")
-		if len(parts) != 5 {
-			continue // Если формат строки неверный, пропускаем её
-		}
-
-		// Парсим данные из строки
-		name := parts[0]
-		value := parts[1]
-		path := parts[2]
-		domain := parts[3]
-		expires, err := time.Parse(time.RFC1123, parts[4])
-		if err != nil {
-			return err
-		}
-
-		// Создаем куку и добавляем её в список
-		cookie := &http.Cookie{
-			Name:    name,
-			Value:   value,
-			Path:    path,
-			Domain:  domain,
-			Expires: expires,
-		}
-		cookies = append(cookies, cookie)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	// Добавляем куки в cookie jar
-	jar.SetCookies(u, cookies)
-	return nil
-}
-
+// Предикат для функции загрузки страницы с повтором
+// при неудаче
 type LoadPredicate func() (*html.Node, error)
 
+// Ззагружает страницу с повтором при неудаче
 func retryLoadFromUrl(attempts int8, print bool, pred LoadPredicate) (*html.Node, error) {
 	var (
 		doc   *html.Node

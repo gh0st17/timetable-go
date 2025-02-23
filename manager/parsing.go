@@ -1,35 +1,33 @@
 package manager
 
 import (
+	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
 	"github.com/gh0st17/timetable-go/manager/internal/parser"
-
-	"github.com/gh0st17/timetable-go/internal/basic_types"
 
 	"golang.org/x/net/html"
 )
 
-func parseSubjects(html_subjects *[]html.Node, day *basic_types.Day) {
-	var (
-		html_subj_name []html.Node
-		html_place     []html.Node
-	)
+// Разбор предметов
+func parseSubjects(html_subjects []html.Node, day bt.Day) bt.Day {
+	for _, html_subject := range html_subjects {
+		html_subj_name := parser.FindNode(&html_subject, subj_name_param)[0]
+		e_type, e_name := parser.ExtractSubject(html_subj_name)
+		html_place := parser.FindNode(&html_subject, place_block_param)[0]
 
-	for i, html_subject := range *html_subjects {
-		parser.FindNode(&html_subject, &html_subj_name, &subj_name_param)
-		if html_subj_name != nil {
-			day.Subjects = append(day.Subjects, Subject{})
-			parser.ExtractSubject(&html_subj_name, &day.Subjects[i])
-		}
-
-		parser.FindNode(&html_subject, &html_place, &place_block_param)
-		parser.ExtractPlace(&html_place[i], &day.Subjects[i])
+		subject := parser.ExtractPlace(&html_place)
+		subject.Event_name = e_name
+		subject.Event_type = e_type
+		day.Subjects = append(day.Subjects, subject)
 	}
+
+	return day
 }
 
-func parseDays(html_days *[]html.Node, timetable *[]Day) {
-	for _, html_day := range *html_days {
+// Разбор учебных дней
+func parseDays(html_days []html.Node, timetable []bt.Day) []bt.Day {
+	for _, html_day := range html_days {
 		var (
-			day           Day
+			day           bt.Day
 			html_subjects []html.Node
 			html_date     *html.Node
 		)
@@ -41,9 +39,11 @@ func parseDays(html_days *[]html.Node, timetable *[]Day) {
 
 		day.Date = parser.ExtractText(html_date)
 
-		parser.FindNode(&html_day, &html_subjects, &subj_param)
-		parseSubjects(&html_subjects, &day)
+		html_subjects = parser.FindNode(&html_day, subj_param)
+		day = parseSubjects(html_subjects, day)
 
-		*timetable = append(*timetable, day)
+		timetable = append(timetable, day)
 	}
+
+	return timetable
 }

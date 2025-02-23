@@ -11,7 +11,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Group struct {
+// Прдеставляет таблицу groups
+type group struct {
 	Year         uint16
 	SemesterTime uint8
 	Department   uint
@@ -19,7 +20,8 @@ type Group struct {
 	GroupName    string
 }
 
-type Subject struct {
+// Прдеставляет таблицу timetable
+type subject struct {
 	Educator1  string
 	Educator2  string
 	Place1     string
@@ -29,6 +31,8 @@ type Subject struct {
 	Event_time string
 }
 
+// Представляет критрии для подстановки в условие
+// SQL запроса
 type Criteria struct {
 	Key          string
 	Value        any
@@ -39,6 +43,7 @@ type TimetableDB struct {
 	tdb *sql.DB
 }
 
+// Возвращает 0 если семестр - весенний, иначе возващает 1
 func CalculateSemType() (semesterTime uint8) {
 	now := time.Now()
 	if now.Month() > 8 {
@@ -50,8 +55,9 @@ func CalculateSemType() (semesterTime uint8) {
 	return semesterTime
 }
 
-func buildGroup(p *params.Params) *Group {
-	return &Group{
+// Возвращает запись группы
+func buildGroup(p *params.Params) *group {
+	return &group{
 		Year:         uint16(time.Now().Year()),
 		SemesterTime: CalculateSemType(),
 		Department:   p.Dep,
@@ -60,6 +66,7 @@ func buildGroup(p *params.Params) *Group {
 	}
 }
 
+// Загружает локальную базу данных из файла
 func (db *TimetableDB) LoadDB(fileName string) error {
 	var err error
 	db.tdb, err = sql.Open("sqlite3", fileName)
@@ -70,6 +77,7 @@ func (db *TimetableDB) LoadDB(fileName string) error {
 	return nil
 }
 
+// Закрывает базу данных
 func (db *TimetableDB) CloseDB() error {
 	if err := db.tdb.Close(); err != nil {
 		return errtype.ErrDataBase(errtype.Join(ErrCloseDB, err))
@@ -78,6 +86,7 @@ func (db *TimetableDB) CloseDB() error {
 	return nil
 }
 
+// Вставка в таблицу groups
 func (db *TimetableDB) InsertGroup(groupsLines []string, p *params.Params) error {
 	var (
 		err   error
@@ -105,6 +114,7 @@ func (db *TimetableDB) InsertGroup(groupsLines []string, p *params.Params) error
 	return nil
 }
 
+// Запрос в таблице groups
 func (db *TimetableDB) QueryGroup(dep uint, course uint) (*sql.Rows, error) {
 	criteries := []Criteria{}
 	c := Criteria{
@@ -121,10 +131,11 @@ func (db *TimetableDB) QueryGroup(dep uint, course uint) (*sql.Rows, error) {
 	}
 	criteries = append(criteries, c)
 
-	return db.query("groupName", "groups", &criteries)
+	return db.query("groupName", "groups", criteries)
 }
 
-func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*sql.Rows, error) {
+// Общая функция для запросов в базе данных
+func (db *TimetableDB) query(sel string, table string, criteries []Criteria) (*sql.Rows, error) {
 	var (
 		err   error
 		query string
@@ -132,7 +143,7 @@ func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*
 	)
 
 	query = fmt.Sprintf("SELECT %s FROM %s WHERE ", sel, table)
-	for _, c := range *criteries {
+	for _, c := range criteries {
 		query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
 	}
 	query += fmt.Sprintf("ORDER BY %s ASC", sel)
@@ -144,6 +155,7 @@ func (db *TimetableDB) query(sel string, table string, criteries *[]Criteria) (*
 	return rows, nil
 }
 
+// Возвраает список групп в виде среза строк
 func (db *TimetableDB) GetGroupsLines(rows *sql.Rows) ([]string, error) {
 	var (
 		line        string
@@ -161,15 +173,23 @@ func (db *TimetableDB) GetGroupsLines(rows *sql.Rows) ([]string, error) {
 	return groupsLines, nil
 }
 
-func (db *TimetableDB) Delete(table string, criteries *[]Criteria) error {
+// Общий метод для удаления записей из таблиц базы данных
+func (db *TimetableDB) Delete(table string, criteries []Criteria) error {
 	query := fmt.Sprintf("DELETE FROM %s WHERE ", table)
 
-	for _, c := range *criteries {
-		query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
+	if len(criteries) > 0 {
+		for _, c := range criteries {
+			query += fmt.Sprintf("%s=%v %s ", c.Key, c.Value, c.PostOperator)
+		}
+	} else {
+		query += "1;"
 	}
 
-	if _, err := db.tdb.Exec(query); err != nil {
+	if res, err := db.tdb.Exec(query); err != nil {
 		return errtype.ErrDataBase(errtype.Join(ErrDelete, err))
+	} else {
+		affected, _ := res.RowsAffected()
+		fmt.Println("Удалено строк:", affected)
 	}
 
 	return nil
