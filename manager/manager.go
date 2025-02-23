@@ -154,7 +154,7 @@ func Run(p *Params) error {
 
 	if p.WorkDir == "" {
 		if p.WorkDir, err = getWd(); err != nil {
-			return err
+			return errtype.ErrRuntime(err)
 		}
 
 		if p.OutDir == "" {
@@ -184,7 +184,9 @@ func Run(p *Params) error {
 	}
 
 	jar, _ := cookiejar.New(nil)
-	loadCookiesFromFile(jar, "cookies.txt", u)
+	if err = loadCookiesFromFile(jar, "cookies.txt", u); err != nil {
+		return errtype.ErrRuntime(err)
+	}
 	if len(jar.Cookies(u)) == 0 {
 		_, _ = loadFromUrl(u, jar, p.ProxyUrl)
 	}
@@ -197,7 +199,7 @@ func Run(p *Params) error {
 	// Work with timetable in DB at this line
 
 	if doc, err = retryLoadFromUrl(3, true, pred); err != nil {
-		return err
+		return errtype.ErrNetwork(err)
 	} else {
 		// Сохраняем куки в файл
 		if err := saveCookiesToFile(jar, "cookies.txt", u); err != nil {
