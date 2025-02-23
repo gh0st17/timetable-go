@@ -9,6 +9,7 @@ package parser
 
 import (
 	"strings"
+	"unicode"
 
 	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
 
@@ -70,7 +71,23 @@ func ExtractSubject(html_subj html.Node) (event_name string, event_type string) 
 	return event_name, event_type
 }
 
-// Извлекает время и место проведения занятия из html
+func capFirstRune(str string) string {
+	runes := []rune(str)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
+}
+
+func fixEducatorCase(educator string) string {
+	fio := strings.Split(educator, " ")
+	for i, part := range fio {
+		fio[i] = capFirstRune(strings.ToLower(part))
+	}
+
+	return strings.Join(fio, " ")
+}
+
+// Извлекает имя преподавателя, время и место проведения
+// занятия из html
 func ExtractPlace(html_place *html.Node) (subject bt.Subject) {
 	var (
 		tmp_str    string
@@ -79,7 +96,8 @@ func ExtractPlace(html_place *html.Node) (subject bt.Subject) {
 
 	educs_html = FindNode(html_place, educator_param)
 	for _, html_edu := range educs_html {
-		subject.Educators = append(subject.Educators, ExtractText(&html_edu))
+		educator := fixEducatorCase(ExtractText(&html_edu))
+		subject.Educators = append(subject.Educators, educator)
 	}
 
 	html_place = html_place.FirstChild.NextSibling

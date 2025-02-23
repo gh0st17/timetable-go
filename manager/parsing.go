@@ -9,15 +9,15 @@ import (
 
 // Разбор предметов
 func parseSubjects(html_subjects []html.Node, day bt.Day) bt.Day {
-	for i, html_subject := range html_subjects {
+	for _, html_subject := range html_subjects {
 		html_subj_name := parser.FindNode(&html_subject, subj_name_param)[0]
-		day.Subjects = append(day.Subjects, bt.Subject{})
 		e_type, e_name := parser.ExtractSubject(html_subj_name)
-
 		html_place := parser.FindNode(&html_subject, place_block_param)[0]
-		day.Subjects[i] = parser.ExtractPlace(&html_place)
-		day.Subjects[i].Event_name = e_name
-		day.Subjects[i].Event_type = e_type
+
+		subject := parser.ExtractPlace(&html_place)
+		subject.Event_name = e_name
+		subject.Event_type = e_type
+		day.Subjects = append(day.Subjects, subject)
 	}
 
 	return day
