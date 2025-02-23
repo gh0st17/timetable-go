@@ -3,7 +3,7 @@ package params
 // Строки для справки
 const (
 	versionDesc = "Печать номера версии и выход"
-	versionText = "timetable 1.0.3b2\n" +
+	versionText = "timetable 1.0.3\n" +
 		"Copyright (C) 2025\n" +
 		"Лицензия MIT: THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY\n" +
 		"OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO\n" +
