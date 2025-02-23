@@ -1,9 +1,16 @@
+// Пакет parser предоставляет набор функции для
+// разбора исходного кода страницы с расписанием
+// или со списком групп
+//
+// Основные функции:
+//   - FindNode: Поиск узлов с нужными
+//     параметрами [NodeParam]
 package parser
 
 import (
 	"strings"
 
-	"github.com/gh0st17/timetable-go/internal/basic_types"
+	"github.com/gh0st17/timetable-go/manager/internal/basic_types"
 
 	"golang.org/x/net/html"
 )
@@ -23,7 +30,7 @@ var (
 	}
 )
 
-// Поиск узлов
+// Поиск узлов с нужными параметрами [NodeParam]
 func FindNode(doc *html.Node, param NodeParam) []html.Node {
 	var found []html.Node
 

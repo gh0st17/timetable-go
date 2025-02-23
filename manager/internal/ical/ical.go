@@ -1,4 +1,11 @@
-package manager
+// Пакет ical предоставляет набор функции для
+// формирования файла ics из среза типа [base_types.Day]
+//
+// Основные функции:
+//   - WriteIcal: Запись расписания в файл ics
+//   - CalcWeek: Рассчитывает номер текущей недели
+//     с учетом сезона семестра
+package ical
 
 import (
 	"crypto/sha1"
@@ -8,10 +15,35 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gh0st17/timetable-go/internal/basic_types"
+	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
+	fs "github.com/gh0st17/timetable-go/manager/internal/filesystem"
+	"github.com/gh0st17/timetable-go/params"
 )
 
-func calcWeek() uint {
+// Запись расписания в файл ics
+func WriteIcal(timetable []bt.Day, p *params.Params) error {
+	fmt.Printf("Имя файла %s\n", p.FileName)
+
+	var dataString string
+	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n\n"
+
+	for _, day := range timetable {
+		for i, subject := range day.Subjects {
+			dataString = buildDataString(p.GroupName+day.Date, subject)
+			uid := stringToHash(dataString)
+			icalDoc += getEvent(day, i, uid) + "\n\n"
+		}
+
+		icalDoc += "\n"
+	}
+
+	icalDoc += "END:VCALENDAR"
+
+	return fs.WriteString(p.OutDir+"/"+p.FileName, &icalDoc)
+}
+
+// Рассчитывает номер текущей недели с учетом сезона семестра
+func CalcWeek() uint {
 	today := time.Now()
 	_, week := today.ISOWeek()
 
@@ -35,12 +67,14 @@ func calcWeek() uint {
 	return uint(week)
 }
 
+// Возвращает строку с заголовком ics файла
 func getHeader() (header string) {
 	return `VERSION:2.0
 PRODID:ghost17 | Alexey Sorokin
 CALSCALE:GREGORIAN`
 }
 
+// Возвращает строки с временем начала и конца занятия
 func getDate(month int, day int, hour int, min int) (start string, end string) {
 	year := time.Now().Year()
 
@@ -56,12 +90,14 @@ func getDate(month int, day int, hour int, min int) (start string, end string) {
 	return start, end
 }
 
+// Возвращает уникальный хэш для события iCal
 func stringToHash(dataString string) uint64 {
 	hash := sha1.Sum([]byte(dataString))
 	return binary.BigEndian.Uint64(hash[:8])
 }
 
-func buildDataString(basicString string, subject *Subject) string {
+// Формирует данные о занятии в строку
+func buildDataString(basicString string, subject bt.Subject) string {
 	basicString += subject.Event_name + subject.Event_time
 	basicString += subject.Event_type
 
@@ -76,14 +112,15 @@ func buildDataString(basicString string, subject *Subject) string {
 	return basicString
 }
 
-func getEvent(day *Day, eventIdx int, uid uint64) (event string) {
+// Формирует и возвращает событие iCal для занятия
+func getEvent(day bt.Day, eventIdx int, uid uint64) (event string) {
 	var (
 		startDate string
 		endDate   string
 		summary   string
 		location  string
-		subject   *Subject = &day.Subjects[eventIdx]
-		offset    int      = 0
+		subject   bt.Subject = day.Subjects[eventIdx]
+		offset    int        = 0
 	)
 
 	splittedDate := strings.Split(day.Date, " ")
@@ -92,7 +129,7 @@ func getEvent(day *Day, eventIdx int, uid uint64) (event string) {
 	}
 
 	dayInt, _ := strconv.Atoi(splittedDate[1+offset])
-	month := basic_types.LongMonthNames[splittedDate[2+offset]]
+	month := bt.LongMonthNames[splittedDate[2+offset]]
 
 	splittedTime := strings.Split(day.Subjects[eventIdx].Event_time, " ")
 	splittedClock := strings.Split(splittedTime[0], ":")
@@ -121,26 +158,4 @@ SUMMARY:%s
 LOCATION:%s
 END:VEVENT`,
 		uid, startDate, startDate, endDate, summary, location)
-}
-
-// Запись расписания в файл ics
-func writeIcal(timetable []Day, p *Params) error {
-	fmt.Printf("Имя файла %s\n", p.FileName)
-
-	var dataString string
-	icalDoc := "BEGIN:VCALENDAR\n" + getHeader() + "\n\n\n"
-
-	for _, day := range timetable {
-		for i, subject := range day.Subjects {
-			dataString = buildDataString(p.GroupName+day.Date, &subject)
-			uid := stringToHash(dataString)
-			icalDoc += getEvent(&day, i, uid) + "\n\n"
-		}
-
-		icalDoc += "\n"
-	}
-
-	icalDoc += "END:VCALENDAR"
-
-	return writeString(p.OutDir+"/"+p.FileName, &icalDoc)
 }

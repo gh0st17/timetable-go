@@ -1,3 +1,9 @@
+// Пакет manager предоставляет набор функции для
+// организации работы всех функции программы в
+// в зависимости от входных параметров [params.Params]
+//
+// Основные функции:
+//   - Run: Запускает работу программы
 package manager
 
 import (
@@ -10,21 +16,106 @@ import (
 	"sort"
 
 	"github.com/gh0st17/timetable-go/errtype"
-	"github.com/gh0st17/timetable-go/internal/basic_types"
-	"github.com/gh0st17/timetable-go/internal/database"
+	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
+	db "github.com/gh0st17/timetable-go/manager/internal/database"
+	fs "github.com/gh0st17/timetable-go/manager/internal/filesystem"
+	"github.com/gh0st17/timetable-go/manager/internal/ical"
 	"github.com/gh0st17/timetable-go/manager/internal/parser"
+	"github.com/gh0st17/timetable-go/manager/internal/userio"
 	"github.com/gh0st17/timetable-go/params"
 
 	"golang.org/x/net/html"
 )
 
-type Day = basic_types.Day
-type Subject = basic_types.Subject
-type Params = params.Params
+// Запускает работу программы
+func Run(p *params.Params) error {
+	var (
+		tdb       db.TimetableDB
+		doc       *html.Node
+		timetable []bt.Day
+		u         *url.URL
+		err       error
+	)
+
+	if err = tdb.LoadDB("timetable.db"); err != nil {
+		return err
+	}
+
+	if p.WorkDir == "" {
+		if p.WorkDir, err = fs.GetWd(); err != nil {
+			return errtype.ErrRuntime(err)
+		}
+
+		if p.OutDir == "" {
+			p.OutDir = p.WorkDir
+		}
+	}
+
+	if p.Clear {
+		return tdb.Delete("groups", []db.Criteria{})
+	}
+
+	if err = proceedingGroupDB(p, &tdb, p.List); err != nil {
+		return err
+	}
+
+	p.FileName = p.GroupName + "_"
+
+	if p.List {
+		return nil
+	}
+
+	if p.Session {
+		p.FileName += "Session.ics"
+		u, _ = url.Parse(sessionUrl(p.GroupName))
+	} else {
+		u = proceedingWeek(p)
+	}
+
+	jar, _ := cookiejar.New(nil)
+	if err = fs.LoadCookiesFromFile(jar, "cookies.txt", u); err != nil {
+		return errtype.ErrRuntime(err)
+	}
+	if len(jar.Cookies(u)) == 0 {
+		_, _ = loadFromUrl(u, jar, p.ProxyUrl)
+	}
+
+	pred := func() (*html.Node, error) {
+		return loadFromUrl(u, jar, p.ProxyUrl)
+	}
+
+	// TO DO
+	// Work with timetable in DB at this line
+
+	if doc, err = retryLoadFromUrl(3, true, pred); err != nil {
+		return errtype.ErrNetwork(err)
+	} else {
+		// Сохраняем куки в файл
+		if err := fs.SaveCookiesToFile(jar, "cookies.txt", u); err != nil {
+			return errtype.ErrRuntime(fmt.Errorf("ошибка сохранения куки: %s", err))
+		}
+	}
+
+	if timetable, err = fetchTimetable(doc); err != nil {
+		return err
+	}
+
+	if err = tdb.CloseDB(); err != nil {
+		return err
+	}
+
+	if p.Ical {
+		return ical.WriteIcal(timetable, p)
+	} else {
+		printTimetable(timetable, p)
+	}
+
+	return nil
+}
 
 // Возвращает ссылку текущего расписания
 func todayUrl(group *string) string {
-	return basic_types.BaseUrl + "index.php?group=" + *group
+	return bt.BaseUrl + "index.php?group=" + *group
 }
 
 // Возвращает параметр номера недели
@@ -44,12 +135,12 @@ func courseParam(course uint) string {
 
 // Возвращает адрес страницы с выбором группы
 func groupUrl(dep uint, course uint) string {
-	return basic_types.BaseUrl + "groups.php?" + depParam(dep) + "&" + courseParam(course)
+	return bt.BaseUrl + "groups.php?" + depParam(dep) + "&" + courseParam(course)
 }
 
 // Возвращает адрес страницы с расписанием сессии
 func sessionUrl(group string) string {
-	return basic_types.BaseUrl + "session/index.php?group=" + group
+	return bt.BaseUrl + "session/index.php?group=" + group
 }
 
 // Загружает список групп по сети
@@ -85,7 +176,7 @@ func fetchGroups(u *url.URL, jar http.CookieJar, proxyUrl *url.URL) ([]string, e
 }
 
 // Выполняет разбор страницы с расписанием
-func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
+func fetchTimetable(doc *html.Node) (timetable []bt.Day, err error) {
 	html_days := parser.FindNode(doc, day_param)
 
 	if len(html_days) == 0 {
@@ -98,7 +189,7 @@ func fetchTimetable(doc *html.Node) (timetable []Day, err error) {
 }
 
 // Печатает расписание в окно консоли
-func printTimetable(timetable []Day, p *Params) {
+func printTimetable(timetable []bt.Day, p *params.Params) {
 	fmt.Printf("Группа %s\n\n", p.GroupName)
 
 	if p.Week != 0 {
@@ -127,16 +218,16 @@ func printTimetable(timetable []Day, p *Params) {
 }
 
 // Обработка части имени файла ics
-func proceedingWeek(p *Params) (u *url.URL) {
+func proceedingWeek(p *params.Params) (u *url.URL) {
 	if p.Week != 0 {
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	}
 
 	if p.Next {
-		p.Week = calcWeek()
+		p.Week = ical.CalcWeek()
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Current {
-		p.Week = calcWeek() - 1
+		p.Week = ical.CalcWeek() - 1
 		p.FileName += fmt.Sprintf("Week_%d", p.Week)
 	} else if p.Week == 0 {
 		u, _ = url.Parse(todayUrl(&p.GroupName))
@@ -152,7 +243,7 @@ func proceedingWeek(p *Params) (u *url.URL) {
 
 // Записывает название группы в p, прочитанное из базы данных
 // или из пользовательского ввода
-func proceedingGroupDB(p *Params, tdb *database.TimetableDB, printOnly bool) error {
+func proceedingGroupDB(p *params.Params, tdb *db.TimetableDB, printOnly bool) error {
 	var (
 		groupsLines []string
 		rows        *sql.Rows
@@ -182,101 +273,15 @@ func proceedingGroupDB(p *Params, tdb *database.TimetableDB, printOnly bool) err
 	}
 
 	if p.Group == 0 {
-		printLines(groupsLines, p, printOnly)
+		userio.PrintGroupLines(groupsLines, p, printOnly)
 	}
 
 	if !printOnly && p.Group == 0 {
-		p.GroupName = groupsLines[getUserSelection(groupsLines)]
+		p.GroupName = groupsLines[userio.GetUserSelection(groupsLines)]
 	} else if p.Group > 0 && int(p.Group) <= len(groupsLines) {
 		p.GroupName = groupsLines[p.Group-1]
 	} else if !p.List {
 		return errtype.ErrArgument(errors.New("номер группы не существует"))
-	}
-
-	return nil
-}
-
-// Запускает работу программы
-func Run(p *Params) error {
-	var (
-		tdb       database.TimetableDB
-		doc       *html.Node
-		timetable []Day
-		u         *url.URL
-		err       error
-	)
-
-	if err = tdb.LoadDB("timetable.db"); err != nil {
-		return err
-	}
-
-	if p.WorkDir == "" {
-		if p.WorkDir, err = getWd(); err != nil {
-			return errtype.ErrRuntime(err)
-		}
-
-		if p.OutDir == "" {
-			p.OutDir = p.WorkDir
-		}
-	}
-
-	if p.Clear {
-		return tdb.Delete("groups", []database.Criteria{})
-	}
-
-	if err = proceedingGroupDB(p, &tdb, p.List); err != nil {
-		return err
-	}
-
-	p.FileName = p.GroupName + "_"
-
-	if p.List {
-		return nil
-	}
-
-	if p.Session {
-		p.FileName += "Session.ics"
-		u, _ = url.Parse(sessionUrl(p.GroupName))
-	} else {
-		u = proceedingWeek(p)
-	}
-
-	jar, _ := cookiejar.New(nil)
-	if err = loadCookiesFromFile(jar, "cookies.txt", u); err != nil {
-		return errtype.ErrRuntime(err)
-	}
-	if len(jar.Cookies(u)) == 0 {
-		_, _ = loadFromUrl(u, jar, p.ProxyUrl)
-	}
-
-	pred := func() (*html.Node, error) {
-		return loadFromUrl(u, jar, p.ProxyUrl)
-	}
-
-	// TO DO
-	// Work with timetable in DB at this line
-
-	if doc, err = retryLoadFromUrl(3, true, pred); err != nil {
-		return errtype.ErrNetwork(err)
-	} else {
-		// Сохраняем куки в файл
-		if err := saveCookiesToFile(jar, "cookies.txt", u); err != nil {
-			return errtype.ErrRuntime(fmt.Errorf("ошибка сохранения куки: %s", err))
-		}
-	}
-
-	if timetable, err = fetchTimetable(doc); err != nil {
-		return err
-	}
-
-	if err = tdb.CloseDB(); err != nil {
-		return err
-	}
-
-	if p.Ical {
-		return writeIcal(timetable, p)
-	} else {
-		printTimetable(timetable, p)
 	}
 
 	return nil

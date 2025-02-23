@@ -1,17 +1,17 @@
 package manager
 
 import (
-	"github.com/gh0st17/timetable-go/internal/basic_types"
+	bt "github.com/gh0st17/timetable-go/manager/internal/basic_types"
 	"github.com/gh0st17/timetable-go/manager/internal/parser"
 
 	"golang.org/x/net/html"
 )
 
 // Разбор предметов
-func parseSubjects(html_subjects []html.Node, day *basic_types.Day) {
+func parseSubjects(html_subjects []html.Node, day *bt.Day) {
 	for i, html_subject := range html_subjects {
 		html_subj_name := parser.FindNode(&html_subject, subj_name_param)[0]
-		day.Subjects = append(day.Subjects, Subject{})
+		day.Subjects = append(day.Subjects, bt.Subject{})
 		parser.ExtractSubject(html_subj_name, &day.Subjects[i])
 
 		html_place := parser.FindNode(&html_subject, place_block_param)[0]
@@ -20,10 +20,10 @@ func parseSubjects(html_subjects []html.Node, day *basic_types.Day) {
 }
 
 // Разбор учебных дней
-func parseDays(html_days []html.Node, timetable []Day) []Day {
+func parseDays(html_days []html.Node, timetable []bt.Day) []bt.Day {
 	for _, html_day := range html_days {
 		var (
-			day           Day
+			day           bt.Day
 			html_subjects []html.Node
 			html_date     *html.Node
 		)
