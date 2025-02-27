@@ -39,9 +39,19 @@ func SaveCookiesToFile(jar http.CookieJar, filename string, u *url.URL) error {
 
 // Загружает куки из текстового файла
 func LoadCookiesFromFile(jar http.CookieJar, filename string, u *url.URL) error {
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
+	var (
+		file *os.File
+		err  error
+	)
+
+	if _, err = os.Stat(filename); os.IsNotExist(err) {
+		if file, err = os.Create(filename); err != nil {
+			return err
+		}
+	} else {
+		if file, err = os.Open(filename); err != nil {
+			return err
+		}
 	}
 	defer file.Close()
 
