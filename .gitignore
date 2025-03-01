@@ -6,3 +6,4 @@ groups/
 **.ics
 *.db
 !empty.db
+__debug**
