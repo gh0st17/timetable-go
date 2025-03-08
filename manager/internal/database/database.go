@@ -108,7 +108,7 @@ func (db *TimetableDB) InsertGroup(groupsLines []string, p *params.Params) error
 	}
 
 	if _, err = db.tdb.Exec(query); err != nil {
-		return errtype.ErrDataBase(errtype.Join(ErrInsetGroup, err))
+		return errtype.ErrDataBase(errtype.Join(ErrInsert, err))
 	}
 
 	return nil
@@ -149,7 +149,7 @@ func (db *TimetableDB) query(sel string, table string, criteries []Criteria) (*s
 	query += fmt.Sprintf("ORDER BY %s ASC", sel)
 
 	if rows, err = db.tdb.Query(query); err != nil {
-		return nil, errtype.ErrDataBase(errtype.Join(ErrQueryGroup, err))
+		return nil, errtype.ErrDataBase(errtype.Join(ErrQuery, err))
 	}
 
 	return rows, nil
@@ -165,7 +165,7 @@ func (db *TimetableDB) GetGroupsLines(rows *sql.Rows) ([]string, error) {
 	for rows.Next() {
 		err := rows.Scan(&line)
 		if err != nil {
-			return nil, errtype.ErrDataBase(errtype.Join(ErrReadGroups, err))
+			return nil, errtype.ErrDataBase(errtype.Join(ErrReadDB, err))
 		}
 		groupsLines = append(groupsLines, line)
 	}
